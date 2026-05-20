@@ -1,5 +1,6 @@
 import axios from 'axios'
 import type { AxiosInstance, AxiosResponse } from 'axios'
+import router from '@/router'
 
 const client: AxiosInstance = axios.create({
   baseURL: '/api',
@@ -20,7 +21,7 @@ client.interceptors.response.use(
       localStorage.removeItem('userId')
       localStorage.removeItem('userName')
       localStorage.removeItem('role')
-      window.location.href = '/login'
+      router.push('/login')
     } else {
       console.warn(`API 오류 [${error.response?.status}]:`, error.response?.data?.detail || error.message)
     }

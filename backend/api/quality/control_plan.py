@@ -8,12 +8,10 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query
-
-logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from api.deps import get_db, get_current_user
+from api.deps import get_db, get_current_user, require_role
 from core.audit import log_create, log_update, log_delete
 from models.existing import SysUser, Product
 from models.iatf import QmsControlPlan, QmsControlPlanItem
@@ -24,6 +22,7 @@ from schemas.control_plan import (
 from schemas.common import PagedResponse
 from config import settings
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/quality/control-plan", tags=["Control Plan"])
 
 
@@ -117,7 +116,7 @@ def list_control_plans(
     return PagedResponse(items=items, total=total, page=page, size=size, pages=pages)
 
 
-@router.post("/", response_model=ControlPlanResponse)
+@router.post("/", response_model=ControlPlanResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_control_plan(
     data: ControlPlanCreate,
     db: Session = Depends(get_db),
@@ -165,7 +164,7 @@ def get_control_plan(
     return _build_cp_response(cp, db)
 
 
-@router.put("/{cp_id}", response_model=ControlPlanResponse)
+@router.put("/{cp_id}", response_model=ControlPlanResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_control_plan(
     cp_id: int,
     data: ControlPlanUpdate,
@@ -195,7 +194,7 @@ def update_control_plan(
     return _build_cp_response(cp, db)
 
 
-@router.delete("/{cp_id}")
+@router.delete("/{cp_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_control_plan(
     cp_id: int,
     db: Session = Depends(get_db),
@@ -238,7 +237,7 @@ def list_cp_items(
     return [ControlPlanItemResponse.model_validate(item) for item in items]
 
 
-@router.post("/{cp_id}/items", response_model=ControlPlanItemResponse)
+@router.post("/{cp_id}/items", response_model=ControlPlanItemResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_cp_item(
     cp_id: int,
     data: ControlPlanItemCreate,
@@ -277,7 +276,7 @@ def create_cp_item(
     return ControlPlanItemResponse.model_validate(item)
 
 
-@router.put("/items/{cp_item_id}", response_model=ControlPlanItemResponse)
+@router.put("/items/{cp_item_id}", response_model=ControlPlanItemResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_cp_item(
     cp_item_id: int,
     data: ControlPlanItemUpdate,
@@ -307,7 +306,7 @@ def update_cp_item(
     return ControlPlanItemResponse.model_validate(item)
 
 
-@router.delete("/items/{cp_item_id}")
+@router.delete("/items/{cp_item_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_cp_item(
     cp_item_id: int,
     db: Session = Depends(get_db),

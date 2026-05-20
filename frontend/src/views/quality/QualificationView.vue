@@ -556,8 +556,11 @@ async function deleteQual(row: any) {
     ElMessage.success('삭제되었습니다.')
     loadQualifications()
     loadExpiring()
-  } catch {
-    // cancelled or error
+  } catch (e: unknown) {
+    if (e !== 'cancel' && String(e) !== 'cancel') {
+      console.warn('삭제 실패:', e)
+      ElMessage.error('삭제에 실패했습니다.')
+    }
   }
 }
 
@@ -641,8 +644,11 @@ async function deleteAudit(row: any) {
     await trainingApi.deleteQualAudit(row.audit_id)
     ElMessage.success('삭제되었습니다.')
     loadQualAudits()
-  } catch {
-    // cancelled or error
+  } catch (e: unknown) {
+    if (e !== 'cancel' && String(e) !== 'cancel') {
+      console.warn('삭제 실패:', e)
+      ElMessage.error('삭제에 실패했습니다.')
+    }
   }
 }
 
@@ -689,23 +695,4 @@ async function submitAudit() {
 </script>
 
 <style scoped>
-.kpi-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.kpi-row > * {
-  flex: 1;
-  min-width: 180px;
-}
-
-.filter-bar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  align-items: center;
-}
 </style>

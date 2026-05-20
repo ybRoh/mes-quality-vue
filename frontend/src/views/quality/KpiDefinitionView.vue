@@ -417,8 +417,11 @@ async function deleteItem(row: any) {
       kpiDataList.value = []
     }
     loadDefinitions()
-  } catch {
-    // cancelled or error
+  } catch (e: unknown) {
+    if (e !== 'cancel' && String(e) !== 'cancel') {
+      console.warn('삭제 실패:', e)
+      ElMessage.error('삭제에 실패했습니다.')
+    }
   }
 }
 
@@ -492,12 +495,6 @@ async function submitData() {
 </script>
 
 <style scoped>
-.filter-bar {
-  margin-bottom: 16px;
-  display: flex;
-  gap: 12px;
-}
-
 .data-header {
   display: flex;
   align-items: center;

@@ -489,8 +489,11 @@ async function deleteFinding(row: any) {
       findingActions.value = []
     }
     loadFindings()
-  } catch {
-    // cancelled or error
+  } catch (e: unknown) {
+    if (e !== 'cancel' && String(e) !== 'cancel') {
+      console.warn('삭제 실패:', e)
+      ElMessage.error('삭제에 실패했습니다.')
+    }
   }
 }
 
@@ -582,12 +585,6 @@ async function submitAction() {
 </script>
 
 <style scoped>
-.filter-bar {
-  margin-bottom: 16px;
-  display: flex;
-  gap: 12px;
-}
-
 .finding-detail-header {
   display: flex;
   align-items: center;

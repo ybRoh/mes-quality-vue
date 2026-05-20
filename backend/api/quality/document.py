@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from api.deps import get_db, get_current_user
+from api.deps import get_db, get_current_user, require_role
 from core.audit import log_create, log_update, log_delete
 from models.existing import SysUser
 from models.iatf import QmsDocument, QmsDocumentRevision, QmsDocumentAttachment
@@ -25,6 +25,7 @@ from schemas.document import (
 )
 from schemas.common import PagedResponse
 from config import settings
+from api.quality.utils import escape_like
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/quality/document", tags=["표준문서관리"])
@@ -81,7 +82,7 @@ def list_documents(
     if department:
         query = query.filter(QmsDocument.department == department)
     if keyword:
-        query = query.filter(QmsDocument.title.ilike(f"%{keyword}%"))
+        query = query.filter(QmsDocument.title.ilike(f"%{escape_like(keyword)}%"))
 
     total = query.count()
     docs = query.order_by(QmsDocument.updated_at.desc()).offset((page - 1) * size).limit(size).all()
@@ -114,7 +115,7 @@ def list_documents(
     return PagedResponse(items=items, total=total, page=page, size=size, pages=pages)
 
 
-@router.post("/", response_model=DocumentResponse)
+@router.post("/", response_model=DocumentResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_document(
     data: DocumentCreate,
     db: Session = Depends(get_db),
@@ -162,7 +163,7 @@ def get_document(
     return _build_doc_response(doc, db)
 
 
-@router.put("/{doc_id}", response_model=DocumentResponse)
+@router.put("/{doc_id}", response_model=DocumentResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_document(
     doc_id: int,
     data: DocumentUpdate,
@@ -191,7 +192,7 @@ def update_document(
     return _build_doc_response(doc, db)
 
 
-@router.delete("/{doc_id}")
+@router.delete("/{doc_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_document(
     doc_id: int,
     db: Session = Depends(get_db),
@@ -223,7 +224,7 @@ def delete_document(
 
 # ── 워크플로우 ──
 
-@router.put("/{doc_id}/approve", response_model=DocumentResponse)
+@router.put("/{doc_id}/approve", response_model=DocumentResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def approve_document(
     doc_id: int,
     db: Session = Depends(get_db),
@@ -268,7 +269,7 @@ def approve_document(
     return _build_doc_response(doc, db)
 
 
-@router.put("/{doc_id}/obsolete", response_model=DocumentResponse)
+@router.put("/{doc_id}/obsolete", response_model=DocumentResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def obsolete_document(
     doc_id: int,
     db: Session = Depends(get_db),
@@ -323,7 +324,7 @@ def list_revisions(
     return [DocumentRevisionResponse.model_validate(r) for r in revs]
 
 
-@router.post("/{doc_id}/revisions", response_model=DocumentRevisionResponse)
+@router.post("/{doc_id}/revisions", response_model=DocumentRevisionResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_revision(
     doc_id: int,
     data: DocumentRevisionCreate,
@@ -379,7 +380,7 @@ def list_attachments(
     return [DocumentAttachmentResponse.model_validate(a) for a in atts]
 
 
-@router.post("/{doc_id}/attachments", response_model=DocumentAttachmentResponse)
+@router.post("/{doc_id}/attachments", response_model=DocumentAttachmentResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 async def upload_attachment(
     doc_id: int,
     file: UploadFile = File(...),
@@ -391,12 +392,22 @@ async def upload_attachment(
     if not doc:
         raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
 
+    # 파일 확장자 검증
+    ALLOWED_EXTENSIONS = {'.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.jpg', '.jpeg', '.png', '.gif', '.zip', '.csv', '.txt'}
+    ext = os.path.splitext(file.filename or '')[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"허용되지 않는 파일 형식입니다: {ext}")
+
+    # 파일 크기 제한 (50MB)
+    MAX_FILE_SIZE = 50 * 1024 * 1024
+    content = await file.read()
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="파일 크기가 50MB를 초과합니다")
+
     # 고유 파일명 생성
-    ext = os.path.splitext(file.filename)[1] if file.filename else ""
     stored_name = f"{uuid.uuid4().hex}{ext}"
     file_path = os.path.join(UPLOAD_DIR, stored_name)
 
-    content = await file.read()
     with open(file_path, "wb") as f:
         f.write(content)
 
@@ -422,7 +433,7 @@ async def upload_attachment(
     return DocumentAttachmentResponse.model_validate(att)
 
 
-@router.delete("/attachments/{attachment_id}")
+@router.delete("/attachments/{attachment_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_attachment(
     attachment_id: int,
     db: Session = Depends(get_db),

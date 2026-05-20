@@ -5,7 +5,7 @@
 
 from pydantic import BaseModel, ConfigDict
 from datetime import date, datetime
-from typing import Optional
+from typing import Literal, Optional
 
 
 # ============================================================
@@ -50,19 +50,19 @@ class AuditRequirementResponse(BaseModel):
 class AuditPlanCreate(BaseModel):
     plan_no: str
     audit_year: int
-    audit_type: str = "INTERNAL"
+    audit_type: Literal["INTERNAL", "EXTERNAL", "SUPPLIER"] = "INTERNAL"
     title: str
     scope: Optional[str] = None
     department: Optional[str] = None
     lead_auditor: Optional[str] = None
     plan_start: Optional[date] = None
     plan_end: Optional[date] = None
-    status: str = "PLANNED"
+    status: Literal["PLANNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"] = "PLANNED"
 
 
 class AuditPlanUpdate(BaseModel):
     audit_year: Optional[int] = None
-    audit_type: Optional[str] = None
+    audit_type: Optional[Literal["INTERNAL", "EXTERNAL", "SUPPLIER"]] = None
     title: Optional[str] = None
     scope: Optional[str] = None
     department: Optional[str] = None
@@ -71,7 +71,7 @@ class AuditPlanUpdate(BaseModel):
     plan_end: Optional[date] = None
     actual_start: Optional[date] = None
     actual_end: Optional[date] = None
-    status: Optional[str] = None
+    status: Optional[Literal["PLANNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]] = None
 
 
 class AuditPlanResponse(BaseModel):
@@ -101,19 +101,19 @@ class AuditPlanResponse(BaseModel):
 
 class AuditFindingCreate(BaseModel):
     finding_no: str
-    finding_type: str
+    finding_type: Literal["MAJOR_NC", "MINOR_NC", "OBSERVATION", "OFI"]
     clause_ref: Optional[str] = None
     description: str
     evidence: Optional[str] = None
-    status: str = "OPEN"
+    status: Literal["OPEN", "ACTION_REQUIRED", "IN_PROGRESS", "CLOSED", "VERIFIED"] = "OPEN"
 
 
 class AuditFindingUpdate(BaseModel):
-    finding_type: Optional[str] = None
+    finding_type: Optional[Literal["MAJOR_NC", "MINOR_NC", "OBSERVATION", "OFI"]] = None
     clause_ref: Optional[str] = None
     description: Optional[str] = None
     evidence: Optional[str] = None
-    status: Optional[str] = None
+    status: Optional[Literal["OPEN", "ACTION_REQUIRED", "IN_PROGRESS", "CLOSED", "VERIFIED"]] = None
 
 
 class AuditFindingResponse(BaseModel):
@@ -145,7 +145,7 @@ class CorrectiveActionCreate(BaseModel):
     preventive_action: Optional[str] = None
     responsible: Optional[str] = None
     target_date: Optional[date] = None
-    status: str = "OPEN"
+    status: Literal["OPEN", "IN_PROGRESS", "COMPLETED", "VERIFIED"] = "OPEN"
 
 
 class CorrectiveActionUpdate(BaseModel):
@@ -156,7 +156,7 @@ class CorrectiveActionUpdate(BaseModel):
     responsible: Optional[str] = None
     target_date: Optional[date] = None
     completion_date: Optional[date] = None
-    status: Optional[str] = None
+    status: Optional[Literal["OPEN", "IN_PROGRESS", "COMPLETED", "VERIFIED"]] = None
 
 
 class CorrectiveActionResponse(BaseModel):

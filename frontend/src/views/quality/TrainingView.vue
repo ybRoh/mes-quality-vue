@@ -536,8 +536,11 @@ async function deleteCourse(row: any) {
     await trainingApi.deleteCourse(row.course_id)
     ElMessage.success('삭제되었습니다.')
     loadCourses()
-  } catch {
-    // cancelled or error
+  } catch (e: unknown) {
+    if (e !== 'cancel' && String(e) !== 'cancel') {
+      console.warn('삭제 실패:', e)
+      ElMessage.error('삭제에 실패했습니다.')
+    }
   }
 }
 
@@ -611,8 +614,11 @@ async function deleteRecord(row: any) {
     ElMessage.success('삭제되었습니다.')
     loadRecords()
     loadDueSoon()
-  } catch {
-    // cancelled or error
+  } catch (e: unknown) {
+    if (e !== 'cancel' && String(e) !== 'cancel') {
+      console.warn('삭제 실패:', e)
+      ElMessage.error('삭제에 실패했습니다.')
+    }
   }
 }
 
@@ -693,21 +699,4 @@ async function submitBulkRecords() {
 </script>
 
 <style scoped>
-.filter-bar {
-  margin-bottom: 16px;
-  display: flex;
-  gap: 12px;
-}
-
-.kpi-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.kpi-row > * {
-  flex: 1;
-  min-width: 180px;
-}
 </style>

@@ -5,7 +5,7 @@
 
 from pydantic import BaseModel, ConfigDict
 from datetime import date, datetime
-from typing import Optional, List
+from typing import Literal, Optional, List
 
 
 # ============================================================
@@ -14,11 +14,11 @@ from typing import Optional, List
 
 class DocumentCreate(BaseModel):
     doc_no: str
-    doc_type: str
+    doc_type: Literal["MANUAL", "PROCESS", "REGULATION", "FORM"]
     title: str
     department: Optional[str] = None
     revision: int = 1
-    status: str = "DRAFT"
+    status: Literal["DRAFT", "IN_REVIEW", "APPROVED", "SUPERSEDED", "OBSOLETE"] = "DRAFT"
     prepared_by: Optional[str] = None
     reviewed_by: Optional[str] = None
     approved_by: Optional[str] = None
@@ -26,11 +26,11 @@ class DocumentCreate(BaseModel):
 
 
 class DocumentUpdate(BaseModel):
-    doc_type: Optional[str] = None
+    doc_type: Optional[Literal["MANUAL", "PROCESS", "REGULATION", "FORM"]] = None
     title: Optional[str] = None
     department: Optional[str] = None
     revision: Optional[int] = None
-    status: Optional[str] = None
+    status: Optional[Literal["DRAFT", "IN_REVIEW", "APPROVED", "SUPERSEDED", "OBSOLETE"]] = None
     prepared_by: Optional[str] = None
     reviewed_by: Optional[str] = None
     approved_by: Optional[str] = None

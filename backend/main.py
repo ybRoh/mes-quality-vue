@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
+from config import settings
 from database import engine
 from models.base import QmsBase
 
@@ -32,10 +33,7 @@ app = FastAPI(
 # CORS 미들웨어 (Vue.js 개발 서버 허용)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",   # Vite 개발 서버
-        "http://localhost:3000",   # 대체 개발 서버
-    ],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
@@ -108,7 +106,7 @@ app.include_router(customer_router)
 app.include_router(worker_router)
 
 
-@app.get("/")
+@app.get("/", response_model=dict)
 def root():
     """API 루트 헬스체크"""
     return {
@@ -118,7 +116,7 @@ def root():
     }
 
 
-@app.get("/api/health")
+@app.get("/api/health", response_model=dict)
 def health_check():
     """헬스체크 엔드포인트"""
     return {"status": "ok"}

@@ -434,8 +434,11 @@ async function deleteItem(row: any) {
     await kpiApi.deleteRisk(row.issue_id)
     ElMessage.success('삭제되었습니다.')
     loadList()
-  } catch {
-    // cancelled or error
+  } catch (e: unknown) {
+    if (e !== 'cancel' && String(e) !== 'cancel') {
+      console.warn('삭제 실패:', e)
+      ElMessage.error('삭제에 실패했습니다.')
+    }
   }
 }
 
@@ -482,13 +485,6 @@ async function submitForm() {
 </script>
 
 <style scoped>
-.filter-bar {
-  margin-bottom: 16px;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
 .matrix-container {
   padding: 16px;
 }

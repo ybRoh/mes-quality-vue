@@ -4,7 +4,7 @@
 """
 
 from datetime import date
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from sqlalchemy import func, case, extract
 from sqlalchemy.orm import Session
 
@@ -662,7 +662,7 @@ def get_defect_by_product(db: Session, from_date: date, to_date: date) -> List[d
     return items
 
 
-def get_defect_trend(db: Session, from_date: date, to_date: date) -> List[dict]:
+def get_defect_trend(db: Session, from_date: date, to_date: date) -> Dict[str, Any]:
     """불량유형별 월별 추이"""
     year_month_expr = func.to_char(Production.work_date, "YYYY-MM")
 

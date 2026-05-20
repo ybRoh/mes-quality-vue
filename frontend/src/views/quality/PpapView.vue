@@ -216,7 +216,12 @@ async function deletePpap(row: any) {
     await ppapApi.delete(row.ppap_id)
     ElMessage.success('삭제되었습니다.')
     loadPpapList()
-  } catch { /* cancelled */ }
+  } catch (e: unknown) {
+    if (e !== 'cancel' && String(e) !== 'cancel') {
+      console.warn('삭제 실패:', e)
+      ElMessage.error('삭제에 실패했습니다.')
+    }
+  }
 }
 
 async function createPpap() {

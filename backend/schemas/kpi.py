@@ -5,7 +5,7 @@
 
 from pydantic import BaseModel, ConfigDict, Field
 from datetime import date, datetime
-from typing import Optional, List
+from typing import Literal, Optional, List
 
 
 # ============================================================
@@ -19,10 +19,10 @@ class KpiDefinitionCreate(BaseModel):
     category: Optional[str] = None          # 품질/납기/원가/안전
     unit: Optional[str] = None              # %, ppm, 건
     target_value: Optional[float] = None
-    target_direction: str = "HIGHER"        # HIGHER / LOWER
+    target_direction: Literal["HIGHER", "LOWER"] = "HIGHER"
     threshold_yellow: Optional[float] = None
     threshold_red: Optional[float] = None
-    measurement_frequency: str = "MONTHLY"  # DAILY/WEEKLY/MONTHLY/QUARTERLY/YEARLY
+    measurement_frequency: Literal["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "YEARLY"] = "MONTHLY"
     responsible: Optional[str] = None
     formula: Optional[str] = None
     is_active: bool = True
@@ -35,10 +35,10 @@ class KpiDefinitionUpdate(BaseModel):
     category: Optional[str] = None
     unit: Optional[str] = None
     target_value: Optional[float] = None
-    target_direction: Optional[str] = None
+    target_direction: Optional[Literal["HIGHER", "LOWER"]] = None
     threshold_yellow: Optional[float] = None
     threshold_red: Optional[float] = None
-    measurement_frequency: Optional[str] = None
+    measurement_frequency: Optional[Literal["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "YEARLY"]] = None
     responsible: Optional[str] = None
     formula: Optional[str] = None
     is_active: Optional[bool] = None
@@ -162,7 +162,7 @@ class ProcessMonitorResponse(BaseModel):
 
 class RiskIssueCreate(BaseModel):
     issue_no: str
-    issue_type: str                          # RISK / OPPORTUNITY / ISSUE
+    issue_type: Literal["RISK", "OPPORTUNITY", "ISSUE"]
     category: Optional[str] = None
     process_name: Optional[str] = None
     description: str
@@ -171,12 +171,12 @@ class RiskIssueCreate(BaseModel):
     mitigation_plan: Optional[str] = None
     responsible: Optional[str] = None
     target_date: Optional[date] = None
-    status: str = "IDENTIFIED"               # IDENTIFIED / ANALYZING / MITIGATING / CLOSED / ACCEPTED
+    status: Literal["IDENTIFIED", "ANALYZING", "MITIGATING", "CLOSED", "ACCEPTED"] = "IDENTIFIED"
 
 
 class RiskIssueUpdate(BaseModel):
     issue_no: Optional[str] = None
-    issue_type: Optional[str] = None
+    issue_type: Optional[Literal["RISK", "OPPORTUNITY", "ISSUE"]] = None
     category: Optional[str] = None
     process_name: Optional[str] = None
     description: Optional[str] = None
@@ -185,7 +185,7 @@ class RiskIssueUpdate(BaseModel):
     mitigation_plan: Optional[str] = None
     responsible: Optional[str] = None
     target_date: Optional[date] = None
-    status: Optional[str] = None
+    status: Optional[Literal["IDENTIFIED", "ANALYZING", "MITIGATING", "CLOSED", "ACCEPTED"]] = None
 
 
 class RiskIssueResponse(BaseModel):

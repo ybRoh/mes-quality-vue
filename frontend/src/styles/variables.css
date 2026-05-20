@@ -1,4 +1,6 @@
 :root {
+  /* Legacy --fiori-* aliases kept for backward compatibility.
+     Prefer the --qms-* equivalents below for new code. */
   --fiori-shell: #354A5F;
   --fiori-blue: #0A6ED1;
   --fiori-green: #107E3E;
@@ -14,7 +16,7 @@
   --fiori-radius: 8px;
   --fiori-font: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
-  /* SAP Fiori 기본 색상 */
+  /* SAP Fiori 기본 색상 (canonical --qms-* tokens) */
   --qms-primary: #0A6ED1;
   --qms-primary-dark: #354A5F;
   --qms-success: #107E3E;

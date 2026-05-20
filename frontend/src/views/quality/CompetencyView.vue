@@ -278,8 +278,11 @@ async function deleteItem(row: any) {
     ElMessage.success('삭제되었습니다.')
     loadCompetency()
     loadGapAnalysis()
-  } catch {
-    // cancelled or error
+  } catch (e: unknown) {
+    if (e !== 'cancel' && String(e) !== 'cancel') {
+      console.warn('삭제 실패:', e)
+      ElMessage.error('삭제에 실패했습니다.')
+    }
   }
 }
 
@@ -322,16 +325,4 @@ async function submitForm() {
 </script>
 
 <style scoped>
-.filter-bar {
-  margin-bottom: 16px;
-  display: flex;
-  gap: 12px;
-}
-
-.kpi-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 16px;
-}
 </style>

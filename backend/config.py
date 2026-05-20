@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     MASTER_PAGE_SIZE: int = 50
     MASTER_MAX_PAGE_SIZE: int = 200
 
+    # CORS 허용 오리진
+    CORS_ORIGINS: list = ["http://localhost:5173", "http://localhost:3000"]
+
+    # 환경
+    ENVIRONMENT: str = "development"
+
     # 앱 정보
     APP_NAME: str = "QMS API"
     APP_VERSION: str = "1.0.0"

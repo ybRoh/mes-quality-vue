@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { ElMessage } from 'element-plus'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -177,6 +178,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/quality/RiskIssueView.vue')
       }
     ]
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('@/views/NotFoundView.vue')
   }
 ]
 
@@ -185,7 +191,9 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, _from, next) => {
+let sessionVerified = false
+
+router.beforeEach(async (to, _from, next) => {
   if (to.meta.public) {
     next()
     return
@@ -196,6 +204,26 @@ router.beforeEach((to, _from, next) => {
     next('/login')
     return
   }
+
+  if (!sessionVerified) {
+    try {
+      await authStore.checkSession()
+      sessionVerified = true
+    } catch {
+      authStore.logout()
+      next('/login')
+      return
+    }
+  }
+
+  if (to.meta.roles && Array.isArray(to.meta.roles)) {
+    if (!to.meta.roles.includes(authStore.role)) {
+      ElMessage.warning('접근 권한이 없습니다.')
+      next('/')
+      return
+    }
+  }
+
   next()
 })
 

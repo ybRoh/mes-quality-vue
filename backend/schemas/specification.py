@@ -4,7 +4,7 @@
 
 from pydantic import BaseModel, ConfigDict
 from datetime import date, datetime
-from typing import Optional
+from typing import Literal, Optional
 
 
 # ============================================================
@@ -13,7 +13,7 @@ from typing import Optional
 
 class SpecificationCreate(BaseModel):
     spec_no: str
-    spec_type: str = "CUSTOMER"  # CUSTOMER/DRAWING/LEGAL/INTERNAL
+    spec_type: Literal["CUSTOMER", "DRAWING", "LEGAL", "INTERNAL"] = "CUSTOMER"
     customer_id: Optional[str] = None
     product_id: Optional[str] = None
     title: str
@@ -26,7 +26,7 @@ class SpecificationCreate(BaseModel):
 
 
 class SpecificationUpdate(BaseModel):
-    spec_type: Optional[str] = None
+    spec_type: Optional[Literal["CUSTOMER", "DRAWING", "LEGAL", "INTERNAL"]] = None
     customer_id: Optional[str] = None
     product_id: Optional[str] = None
     title: Optional[str] = None
@@ -131,7 +131,7 @@ class CsrCreate(BaseModel):
     requirement: str
     category: Optional[str] = None  # 품질/포장/물류/환경
     iatf_clause: Optional[str] = None
-    compliance_status: str = "PENDING"  # PENDING/COMPLIANT/NON_COMPLIANT/NA
+    compliance_status: Literal["PENDING", "COMPLIANT", "NON_COMPLIANT", "NA"] = "PENDING"
     responsible: Optional[str] = None
     target_date: Optional[date] = None
     evidence: Optional[str] = None
@@ -142,7 +142,7 @@ class CsrUpdate(BaseModel):
     requirement: Optional[str] = None
     category: Optional[str] = None
     iatf_clause: Optional[str] = None
-    compliance_status: Optional[str] = None
+    compliance_status: Optional[Literal["PENDING", "COMPLIANT", "NON_COMPLIANT", "NA"]] = None
     responsible: Optional[str] = None
     target_date: Optional[date] = None
     completion_date: Optional[date] = None

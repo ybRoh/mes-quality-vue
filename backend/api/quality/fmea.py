@@ -9,12 +9,10 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query
-
-logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from api.deps import get_db, get_current_user
+from api.deps import get_db, get_current_user, require_role
 from core.audit import log_create, log_update, log_delete
 from models.existing import SysUser, Product
 from models.iatf import QmsFmea, QmsFmeaItem
@@ -26,6 +24,7 @@ from schemas.fmea import (
 from schemas.common import PagedResponse
 from config import settings
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/quality/fmea", tags=["FMEA"])
 
 
@@ -117,7 +116,7 @@ def list_fmeas(
     return PagedResponse(items=items, total=total, page=page, size=size, pages=pages)
 
 
-@router.post("/", response_model=FmeaResponse)
+@router.post("/", response_model=FmeaResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_fmea(
     data: FmeaCreate,
     db: Session = Depends(get_db),
@@ -165,7 +164,7 @@ def get_fmea(
     return _build_fmea_response(fmea, db)
 
 
-@router.put("/{fmea_id}", response_model=FmeaResponse)
+@router.put("/{fmea_id}", response_model=FmeaResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_fmea(
     fmea_id: int,
     data: FmeaUpdate,
@@ -195,7 +194,7 @@ def update_fmea(
     return _build_fmea_response(fmea, db)
 
 
-@router.delete("/{fmea_id}")
+@router.delete("/{fmea_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_fmea(
     fmea_id: int,
     db: Session = Depends(get_db),
@@ -221,9 +220,11 @@ def delete_fmea(
 
 # ── FMEA 항목 ──
 
-@router.get("/{fmea_id}/items", response_model=List[FmeaItemResponse])
+@router.get("/{fmea_id}/items", response_model=PagedResponse[FmeaItemResponse])
 def list_fmea_items(
     fmea_id: int,
+    page: int = Query(1, ge=1),
+    size: int = Query(settings.DEFAULT_PAGE_SIZE, ge=1, le=settings.MAX_PAGE_SIZE),
     db: Session = Depends(get_db),
     current_user: SysUser = Depends(get_current_user),
 ):
@@ -232,14 +233,21 @@ def list_fmea_items(
     if not fmea:
         raise HTTPException(status_code=404, detail="FMEA를 찾을 수 없습니다")
 
-    items = db.query(QmsFmeaItem).filter(
+    query = db.query(QmsFmeaItem).filter(
         QmsFmeaItem.fmea_id == fmea_id
-    ).order_by(QmsFmeaItem.item_id).all()
+    ).order_by(QmsFmeaItem.item_id)
 
-    return [FmeaItemResponse.model_validate(item) for item in items]
+    total = query.count()
+    items = query.offset((page - 1) * size).limit(size).all()
+
+    pages = (total + size - 1) // size
+    return PagedResponse(
+        items=[FmeaItemResponse.model_validate(item) for item in items],
+        total=total, page=page, size=size, pages=pages,
+    )
 
 
-@router.post("/{fmea_id}/items", response_model=FmeaItemResponse)
+@router.post("/{fmea_id}/items", response_model=FmeaItemResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_fmea_item(
     fmea_id: int,
     data: FmeaItemCreate,
@@ -302,7 +310,7 @@ def create_fmea_item(
     return FmeaItemResponse.model_validate(item)
 
 
-@router.put("/items/{item_id}", response_model=FmeaItemResponse)
+@router.put("/items/{item_id}", response_model=FmeaItemResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_fmea_item(
     item_id: int,
     data: FmeaItemUpdate,

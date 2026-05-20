@@ -5,13 +5,15 @@
 - GET /api/auth/me: 현재 사용자 정보
 """
 
-import os
+import logging
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from api.deps import get_db, get_current_user
 from config import settings
+
+logger = logging.getLogger(__name__)
 from core.security import create_access_token
 from models.existing import SysUser
 from schemas.common import LoginRequest, LoginResponse
@@ -41,9 +43,10 @@ def login(request: LoginRequest, response: Response, db: Session = Depends(get_d
     # bcrypt 비밀번호 검증
     password_hash = user.password_hash
     if not (password_hash.startswith("$2b$") or password_hash.startswith("$2a$")):
+        logger.error("Invalid password hash format for user_id=%s", request.user_id)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="비밀번호 해시 형식 오류",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="ID 또는 비밀번호가 올바르지 않습니다",
         )
 
     if not bcrypt.checkpw(request.password.encode(), password_hash.encode()):
@@ -58,7 +61,7 @@ def login(request: LoginRequest, response: Response, db: Session = Depends(get_d
         key=_COOKIE_KEY,
         value=access_token,
         httponly=True,
-        secure=os.getenv("ENVIRONMENT", "development") == "production",
+        secure=settings.ENVIRONMENT == "production",
         samesite="lax",
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         path=_COOKIE_PATH,

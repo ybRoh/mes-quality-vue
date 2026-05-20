@@ -1,0 +1,24 @@
+/* Common layout utilities used across views */
+.filter-bar {
+  margin-bottom: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.kpi-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.kpi-row > * {
+  flex: 1;
+  min-width: 180px;
+}
+
+.page-container {
+  max-width: 100%;
+}

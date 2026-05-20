@@ -42,9 +42,16 @@ def list_products(
     total = query.count()
     products = query.order_by(Product.product_id).offset((page - 1) * size).limit(size).all()
 
+    # Batch load customers to avoid N+1
+    customer_ids = list(set(p.customer_id for p in products if p.customer_id))
+    customers_map = {}
+    if customer_ids:
+        custs = db.query(Customer).filter(Customer.customer_id.in_(customer_ids)).all()
+        customers_map = {c.customer_id: c for c in custs}
+
     items = []
     for p in products:
-        customer = db.query(Customer).filter(Customer.customer_id == p.customer_id).first() if p.customer_id else None
+        customer = customers_map.get(p.customer_id)
         items.append({
             "product_id": p.product_id,
             "product_name": p.product_name,

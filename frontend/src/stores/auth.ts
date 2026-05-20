@@ -7,6 +7,7 @@ export const useAuthStore = defineStore('auth', () => {
   const userId = ref<string>(localStorage.getItem('userId') || '')
   const userName = ref<string>(localStorage.getItem('userName') || '')
   const role = ref<string>(localStorage.getItem('role') || '')
+  const sessionChecked = ref(false)
 
   const isLoggedIn = computed(() => !!userId.value)
 
@@ -57,6 +58,7 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('userId', userId.value)
       localStorage.setItem('userName', userName.value)
       localStorage.setItem('role', role.value)
+      sessionChecked.value = true
       return true
     } catch {
       userId.value = ''
@@ -73,6 +75,7 @@ export const useAuthStore = defineStore('auth', () => {
     userId,
     userName,
     role,
+    sessionChecked,
     isLoggedIn,
     login,
     logout,

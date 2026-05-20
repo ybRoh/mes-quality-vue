@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
 
-from api.deps import get_db, get_current_user
+from api.deps import get_db, get_current_user, require_role
 from core.audit import log_create, log_update, log_delete
 from models.existing import SysUser
 from models.iatf import (
@@ -81,7 +81,7 @@ def list_audits(
     return PagedResponse(items=items, total=total, page=page, size=size, pages=pages)
 
 
-@router.post("/", response_model=CustomerAuditResponse)
+@router.post("/", response_model=CustomerAuditResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_audit(
     data: CustomerAuditCreate,
     db: Session = Depends(get_db),
@@ -125,7 +125,7 @@ def get_audit(cust_audit_id: int, db: Session = Depends(get_db), current_user: S
     return resp
 
 
-@router.put("/{cust_audit_id}", response_model=CustomerAuditResponse)
+@router.put("/{cust_audit_id}", response_model=CustomerAuditResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_audit(
     cust_audit_id: int, data: CustomerAuditUpdate,
     db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user),
@@ -156,7 +156,7 @@ def update_audit(
     return resp
 
 
-@router.delete("/{cust_audit_id}")
+@router.delete("/{cust_audit_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_audit(cust_audit_id: int, db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user)):
     audit = db.query(QmsCustomerAudit).filter(QmsCustomerAudit.cust_audit_id == cust_audit_id).first()
     if not audit:
@@ -197,19 +197,28 @@ def list_audit_findings(
         QmsCustomerAuditFinding.cust_audit_id == cust_audit_id
     ).order_by(QmsCustomerAuditFinding.cust_finding_id).all()
 
+    # Batch load action counts to avoid N+1
+    finding_ids = [f.cust_finding_id for f in findings]
+    action_counts = {}
+    if finding_ids:
+        ac = db.query(
+            QmsCustomerAuditAction.cust_finding_id,
+            func.count(QmsCustomerAuditAction.cust_action_id),
+        ).filter(
+            QmsCustomerAuditAction.cust_finding_id.in_(finding_ids)
+        ).group_by(QmsCustomerAuditAction.cust_finding_id).all()
+        action_counts = {fid: cnt for fid, cnt in ac}
+
     result = []
     for f in findings:
-        ac = db.query(func.count(QmsCustomerAuditAction.cust_action_id)).filter(
-            QmsCustomerAuditAction.cust_finding_id == f.cust_finding_id
-        ).scalar()
         resp = CustomerAuditFindingResponse.model_validate(f)
-        resp.action_count = ac
+        resp.action_count = action_counts.get(f.cust_finding_id, 0)
         resp.audit_no = audit.audit_no
         result.append(resp)
     return result
 
 
-@router.post("/{cust_audit_id}/findings", response_model=CustomerAuditFindingResponse)
+@router.post("/{cust_audit_id}/findings", response_model=CustomerAuditFindingResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_finding(
     cust_audit_id: int, data: CustomerAuditFindingCreate,
     db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user),
@@ -305,7 +314,7 @@ def get_finding(cust_finding_id: int, db: Session = Depends(get_db), current_use
     return resp
 
 
-@router.put("/findings/{cust_finding_id}", response_model=CustomerAuditFindingResponse)
+@router.put("/findings/{cust_finding_id}", response_model=CustomerAuditFindingResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_finding(
     cust_finding_id: int, data: CustomerAuditFindingUpdate,
     db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user),
@@ -338,7 +347,7 @@ def update_finding(
     return resp
 
 
-@router.delete("/findings/{cust_finding_id}")
+@router.delete("/findings/{cust_finding_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_finding(cust_finding_id: int, db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user)):
     finding = db.query(QmsCustomerAuditFinding).filter(QmsCustomerAuditFinding.cust_finding_id == cust_finding_id).first()
     if not finding:
@@ -386,7 +395,7 @@ def list_finding_actions(
     return result
 
 
-@router.post("/findings/{cust_finding_id}/actions", response_model=CustomerAuditActionResponse)
+@router.post("/findings/{cust_finding_id}/actions", response_model=CustomerAuditActionResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_action(
     cust_finding_id: int, data: CustomerAuditActionCreate,
     db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user),
@@ -484,7 +493,7 @@ def get_action(cust_action_id: int, db: Session = Depends(get_db), current_user:
     return resp
 
 
-@router.put("/actions/{cust_action_id}", response_model=CustomerAuditActionResponse)
+@router.put("/actions/{cust_action_id}", response_model=CustomerAuditActionResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_action(
     cust_action_id: int, data: CustomerAuditActionUpdate,
     db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user),
@@ -518,7 +527,7 @@ def update_action(
     return resp
 
 
-@router.delete("/actions/{cust_action_id}")
+@router.delete("/actions/{cust_action_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_action(cust_action_id: int, db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user)):
     action = db.query(QmsCustomerAuditAction).filter(QmsCustomerAuditAction.cust_action_id == cust_action_id).first()
     if not action:
@@ -534,7 +543,7 @@ def delete_action(cust_action_id: int, db: Session = Depends(get_db), current_us
     return {"message": "시정조치가 삭제되었습니다"}
 
 
-@router.put("/actions/{cust_action_id}/verify", response_model=CustomerAuditActionResponse)
+@router.put("/actions/{cust_action_id}/verify", response_model=CustomerAuditActionResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def verify_action(
     cust_action_id: int,
     db: Session = Depends(get_db),

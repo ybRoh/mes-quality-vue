@@ -5,7 +5,7 @@
 
 from pydantic import BaseModel, ConfigDict
 from datetime import date, datetime
-from typing import Optional
+from typing import Literal, Optional
 
 
 # ============================================================
@@ -15,27 +15,27 @@ from typing import Optional
 class CustomerAuditCreate(BaseModel):
     audit_no: str
     customer_id: Optional[str] = None
-    audit_type: str = "SQ"
+    audit_type: Literal["SQ", "PROCESS", "PRODUCT", "SYSTEM"] = "SQ"
     audit_date: Optional[date] = None
     audit_end_date: Optional[date] = None
     auditor_name: Optional[str] = None
     scope: Optional[str] = None
-    result: str = "PENDING"
+    result: Literal["PENDING", "PASS", "CONDITIONAL", "FAIL"] = "PENDING"
     score: Optional[float] = None
-    status: str = "SCHEDULED"
+    status: Literal["SCHEDULED", "IN_PROGRESS", "COMPLETED", "CLOSED"] = "SCHEDULED"
     remarks: Optional[str] = None
 
 
 class CustomerAuditUpdate(BaseModel):
     customer_id: Optional[str] = None
-    audit_type: Optional[str] = None
+    audit_type: Optional[Literal["SQ", "PROCESS", "PRODUCT", "SYSTEM"]] = None
     audit_date: Optional[date] = None
     audit_end_date: Optional[date] = None
     auditor_name: Optional[str] = None
     scope: Optional[str] = None
-    result: Optional[str] = None
+    result: Optional[Literal["PENDING", "PASS", "CONDITIONAL", "FAIL"]] = None
     score: Optional[float] = None
-    status: Optional[str] = None
+    status: Optional[Literal["SCHEDULED", "IN_PROGRESS", "COMPLETED", "CLOSED"]] = None
     remarks: Optional[str] = None
 
 
@@ -65,19 +65,19 @@ class CustomerAuditResponse(BaseModel):
 
 class CustomerAuditFindingCreate(BaseModel):
     finding_no: str
-    finding_type: str
+    finding_type: Literal["MAJOR_NC", "MINOR_NC", "OBSERVATION", "OFI"]
     clause_ref: Optional[str] = None
     description: str
     evidence: Optional[str] = None
-    status: str = "OPEN"
+    status: Literal["OPEN", "ACTION_REQUIRED", "IN_PROGRESS", "CLOSED", "VERIFIED"] = "OPEN"
 
 
 class CustomerAuditFindingUpdate(BaseModel):
-    finding_type: Optional[str] = None
+    finding_type: Optional[Literal["MAJOR_NC", "MINOR_NC", "OBSERVATION", "OFI"]] = None
     clause_ref: Optional[str] = None
     description: Optional[str] = None
     evidence: Optional[str] = None
-    status: Optional[str] = None
+    status: Optional[Literal["OPEN", "ACTION_REQUIRED", "IN_PROGRESS", "CLOSED", "VERIFIED"]] = None
 
 
 class CustomerAuditFindingResponse(BaseModel):
@@ -109,7 +109,7 @@ class CustomerAuditActionCreate(BaseModel):
     preventive_action: Optional[str] = None
     responsible: Optional[str] = None
     target_date: Optional[date] = None
-    status: str = "OPEN"
+    status: Literal["OPEN", "IN_PROGRESS", "COMPLETED", "VERIFIED"] = "OPEN"
 
 
 class CustomerAuditActionUpdate(BaseModel):
@@ -120,7 +120,7 @@ class CustomerAuditActionUpdate(BaseModel):
     responsible: Optional[str] = None
     target_date: Optional[date] = None
     completion_date: Optional[date] = None
-    status: Optional[str] = None
+    status: Optional[Literal["OPEN", "IN_PROGRESS", "COMPLETED", "VERIFIED"]] = None
 
 
 class CustomerAuditActionResponse(BaseModel):

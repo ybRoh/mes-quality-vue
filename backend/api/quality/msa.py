@@ -9,12 +9,10 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query
-
-logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from api.deps import get_db, get_current_user
+from api.deps import get_db, get_current_user, require_role
 from core.audit import log_create, log_update, log_delete
 from models.existing import SysUser, Product
 from models.iatf import QmsMsaStudy, QmsMsaMeasurement
@@ -27,6 +25,7 @@ from schemas.common import PagedResponse
 from config import settings
 from services.msa_service import calculate_grr
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/quality/msa", tags=["MSA"])
 
 
@@ -127,7 +126,7 @@ def list_msa_studies(
     return PagedResponse(items=items, total=total, page=page, size=size, pages=pages)
 
 
-@router.post("/", response_model=MsaStudyResponse)
+@router.post("/", response_model=MsaStudyResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_msa_study(
     data: MsaStudyCreate,
     db: Session = Depends(get_db),
@@ -177,7 +176,7 @@ def get_msa_study(
     return _build_msa_response(study, db)
 
 
-@router.put("/{msa_id}", response_model=MsaStudyResponse)
+@router.put("/{msa_id}", response_model=MsaStudyResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_msa_study(
     msa_id: int,
     data: MsaStudyUpdate,
@@ -207,7 +206,7 @@ def update_msa_study(
     return _build_msa_response(study, db)
 
 
-@router.delete("/{msa_id}")
+@router.delete("/{msa_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_msa_study(
     msa_id: int,
     db: Session = Depends(get_db),
@@ -232,24 +231,34 @@ def delete_msa_study(
 
 # ── 측정 데이터 ──
 
-@router.get("/{msa_id}/measurements", response_model=List[MsaMeasurementResponse])
+@router.get("/{msa_id}/measurements", response_model=PagedResponse[MsaMeasurementResponse])
 def list_measurements(
     msa_id: int,
+    page: int = Query(1, ge=1),
+    size: int = Query(settings.DEFAULT_PAGE_SIZE, ge=1, le=settings.MAX_PAGE_SIZE),
     db: Session = Depends(get_db),
     current_user: SysUser = Depends(get_current_user),
 ):
     """MSA 측정 데이터 목록 조회"""
-    measurements = db.query(QmsMsaMeasurement).filter(
+    query = db.query(QmsMsaMeasurement).filter(
         QmsMsaMeasurement.msa_id == msa_id
     ).order_by(
         QmsMsaMeasurement.operator_name,
         QmsMsaMeasurement.part_no,
         QmsMsaMeasurement.trial_no,
-    ).all()
-    return [MsaMeasurementResponse.model_validate(m) for m in measurements]
+    )
+
+    total = query.count()
+    measurements = query.offset((page - 1) * size).limit(size).all()
+
+    pages = (total + size - 1) // size
+    return PagedResponse(
+        items=[MsaMeasurementResponse.model_validate(m) for m in measurements],
+        total=total, page=page, size=size, pages=pages,
+    )
 
 
-@router.post("/{msa_id}/measurements", response_model=List[MsaMeasurementResponse])
+@router.post("/{msa_id}/measurements", response_model=List[MsaMeasurementResponse], dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def add_measurements(
     msa_id: int,
     data: MsaMeasurementBulkCreate,

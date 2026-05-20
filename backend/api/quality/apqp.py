@@ -9,12 +9,10 @@ import logging
 from datetime import datetime, date, timezone
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query
-
-logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from api.deps import get_db, get_current_user
+from api.deps import get_db, get_current_user, require_role
 from core.audit import log_create, log_update, log_delete
 from models.existing import SysUser, Product, Customer
 from models.iatf import QmsApqpProject, QmsApqpPhase, QmsApqpDeliverable
@@ -27,6 +25,7 @@ from schemas.apqp import (
 from schemas.common import PagedResponse
 from config import settings
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/quality/apqp", tags=["APQP"])
 
 # APQP 5단계 정의
@@ -106,7 +105,7 @@ def list_apqp_projects(
     return PagedResponse(items=items, total=total, page=page, size=size, pages=pages)
 
 
-@router.post("/", response_model=ApqpProjectResponse)
+@router.post("/", response_model=ApqpProjectResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_apqp_project(
     data: ApqpProjectCreate,
     db: Session = Depends(get_db),
@@ -207,7 +206,7 @@ def get_apqp_project(
     )
 
 
-@router.put("/{apqp_id}", response_model=ApqpProjectResponse)
+@router.put("/{apqp_id}", response_model=ApqpProjectResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_apqp_project(
     apqp_id: int,
     data: ApqpProjectUpdate,
@@ -235,10 +234,32 @@ def update_apqp_project(
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(project)
 
-    return get_apqp_project(apqp_id, db, current_user)
+    # Build response directly from already-loaded object
+    product = db.query(Product).filter(Product.product_id == project.product_id).first()
+    customer = db.query(Customer).filter(Customer.customer_id == project.customer_id).first() if project.customer_id else None
+    phase_count = db.query(func.count(QmsApqpPhase.phase_id)).filter(
+        QmsApqpPhase.apqp_id == apqp_id
+    ).scalar()
+
+    return ApqpProjectResponse(
+        apqp_id=project.apqp_id,
+        product_id=project.product_id,
+        customer_id=project.customer_id,
+        project_name=project.project_name,
+        project_no=project.project_no,
+        current_phase=project.current_phase,
+        sop_date=project.sop_date,
+        team_leader=project.team_leader,
+        status=project.status,
+        created_at=project.created_at,
+        updated_at=project.updated_at,
+        product_name=product.product_name if product else None,
+        customer_name=customer.customer_name if customer else None,
+        phase_count=phase_count,
+    )
 
 
-@router.delete("/{apqp_id}")
+@router.delete("/{apqp_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_apqp_project(
     apqp_id: int,
     db: Session = Depends(get_db),
@@ -284,11 +305,19 @@ def list_phases(
         QmsApqpPhase.apqp_id == apqp_id
     ).order_by(QmsApqpPhase.phase_no).all()
 
+    # Batch load deliverable counts to avoid N+1
+    phase_ids = [p.phase_id for p in phases]
+    count_map = {}
+    if phase_ids:
+        counts = db.query(
+            QmsApqpDeliverable.phase_id,
+            func.count(QmsApqpDeliverable.deliverable_id).label("cnt")
+        ).filter(QmsApqpDeliverable.phase_id.in_(phase_ids)).group_by(QmsApqpDeliverable.phase_id).all()
+        count_map = {c[0]: c[1] for c in counts}
+
     items = []
     for phase in phases:
-        del_count = db.query(func.count(QmsApqpDeliverable.deliverable_id)).filter(
-            QmsApqpDeliverable.phase_id == phase.phase_id
-        ).scalar()
+        del_count = count_map.get(phase.phase_id, 0)
 
         items.append(ApqpPhaseResponse(
             phase_id=phase.phase_id,
@@ -307,7 +336,7 @@ def list_phases(
     return items
 
 
-@router.put("/phases/{phase_id}", response_model=ApqpPhaseResponse)
+@router.put("/phases/{phase_id}", response_model=ApqpPhaseResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_phase(
     phase_id: int,
     data: ApqpPhaseUpdate,
@@ -367,7 +396,7 @@ def list_deliverables(
     return [ApqpDeliverableResponse.model_validate(d) for d in deliverables]
 
 
-@router.post("/phases/{phase_id}/deliverables", response_model=ApqpDeliverableResponse)
+@router.post("/phases/{phase_id}/deliverables", response_model=ApqpDeliverableResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_deliverable(
     phase_id: int,
     data: ApqpDeliverableCreate,
@@ -400,7 +429,7 @@ def create_deliverable(
     return ApqpDeliverableResponse.model_validate(deliverable)
 
 
-@router.put("/deliverables/{deliverable_id}", response_model=ApqpDeliverableResponse)
+@router.put("/deliverables/{deliverable_id}", response_model=ApqpDeliverableResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_deliverable(
     deliverable_id: int,
     data: ApqpDeliverableUpdate,
@@ -446,16 +475,31 @@ def get_gantt_data(
         QmsApqpPhase.apqp_id == apqp_id
     ).order_by(QmsApqpPhase.phase_no).all()
 
+    # Batch load total and completed counts per phase to avoid N+1
+    gantt_phase_ids = [p.phase_id for p in phases]
+    total_count_map = {}
+    completed_count_map = {}
+    if gantt_phase_ids:
+        total_counts = db.query(
+            QmsApqpDeliverable.phase_id,
+            func.count(QmsApqpDeliverable.deliverable_id).label("cnt")
+        ).filter(QmsApqpDeliverable.phase_id.in_(gantt_phase_ids)).group_by(QmsApqpDeliverable.phase_id).all()
+        total_count_map = {c[0]: c[1] for c in total_counts}
+
+        completed_counts = db.query(
+            QmsApqpDeliverable.phase_id,
+            func.count(QmsApqpDeliverable.deliverable_id).label("cnt")
+        ).filter(
+            QmsApqpDeliverable.phase_id.in_(gantt_phase_ids),
+            QmsApqpDeliverable.status == "COMPLETED",
+        ).group_by(QmsApqpDeliverable.phase_id).all()
+        completed_count_map = {c[0]: c[1] for c in completed_counts}
+
     items = []
     for phase in phases:
         # 진행률 계산 (산출물 기준)
-        total_del = db.query(func.count(QmsApqpDeliverable.deliverable_id)).filter(
-            QmsApqpDeliverable.phase_id == phase.phase_id
-        ).scalar()
-        completed_del = db.query(func.count(QmsApqpDeliverable.deliverable_id)).filter(
-            QmsApqpDeliverable.phase_id == phase.phase_id,
-            QmsApqpDeliverable.status == "COMPLETED",
-        ).scalar()
+        total_del = total_count_map.get(phase.phase_id, 0)
+        completed_del = completed_count_map.get(phase.phase_id, 0)
 
         progress = round(completed_del / total_del * 100, 1) if total_del > 0 else 0.0
         if phase.status == "COMPLETED":

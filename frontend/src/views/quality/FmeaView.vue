@@ -336,8 +336,11 @@ async function deleteFmea(row: any) {
       selectedFmea.value = null
     }
     loadFmeaList()
-  } catch {
-    // cancelled or error
+  } catch (e: unknown) {
+    if (e !== 'cancel' && String(e) !== 'cancel') {
+      console.warn('삭제 실패:', e)
+      ElMessage.error('삭제에 실패했습니다.')
+    }
   }
 }
 
@@ -419,10 +422,4 @@ async function saveFmeaItems(items: any[]) {
   font-size: 14px;
 }
 
-.kpi-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 16px;
-}
 </style>

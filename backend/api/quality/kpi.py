@@ -6,6 +6,7 @@
 """
 
 import logging
+from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Optional, List
 
@@ -13,7 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 
-from api.deps import get_db, get_current_user
+from api.deps import get_db, get_current_user, require_role
 from core.audit import log_create, log_update, log_delete
 from models.existing import SysUser
 from models.iatf import QmsKpiDefinition, QmsKpiData, QmsProcessMonitor, QmsRiskIssue
@@ -26,6 +27,7 @@ from schemas.kpi import (
 )
 from schemas.common import PagedResponse
 from config import settings
+from api.quality.utils import escape_like
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/quality/kpi", tags=["성과지표관리"])
@@ -102,7 +104,7 @@ def list_definitions(
     return PagedResponse(items=items, total=total, page=page, size=size, pages=pages)
 
 
-@router.post("/definitions", response_model=KpiDefinitionResponse)
+@router.post("/definitions", response_model=KpiDefinitionResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_definition(
     data: KpiDefinitionCreate,
     db: Session = Depends(get_db),
@@ -149,7 +151,7 @@ def get_definition(kpi_id: int, db: Session = Depends(get_db), current_user: Sys
     return resp
 
 
-@router.put("/definitions/{kpi_id}", response_model=KpiDefinitionResponse)
+@router.put("/definitions/{kpi_id}", response_model=KpiDefinitionResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_definition(
     kpi_id: int, data: KpiDefinitionUpdate,
     db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user),
@@ -184,7 +186,7 @@ def update_definition(
     return resp
 
 
-@router.delete("/definitions/{kpi_id}")
+@router.delete("/definitions/{kpi_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_definition(kpi_id: int, db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user)):
     kpi = db.query(QmsKpiDefinition).filter(QmsKpiDefinition.kpi_id == kpi_id).first()
     if not kpi:
@@ -230,7 +232,7 @@ def list_kpi_data(
     return result
 
 
-@router.post("/definitions/{kpi_id}/data", response_model=KpiDataResponse)
+@router.post("/definitions/{kpi_id}/data", response_model=KpiDataResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_kpi_data(
     kpi_id: int, data: KpiDataCreate,
     db: Session = Depends(get_db),
@@ -303,7 +305,6 @@ def get_dashboard(
         ).order_by(QmsKpiData.kpi_id, QmsKpiData.period.desc()).all()
 
         # Group by kpi_id
-        from collections import defaultdict
         grouped = defaultdict(list)
         for row in all_data:
             grouped[row.kpi_id].append(row)
@@ -350,7 +351,7 @@ def list_monitors(
 ):
     query = db.query(QmsProcessMonitor)
     if process_name:
-        query = query.filter(QmsProcessMonitor.process_name.ilike(f"%{process_name}%"))
+        query = query.filter(QmsProcessMonitor.process_name.ilike(f"%{escape_like(process_name)}%"))
     if monitor_type:
         query = query.filter(QmsProcessMonitor.monitor_type == monitor_type)
     if result:
@@ -366,7 +367,7 @@ def list_monitors(
     return PagedResponse(items=items, total=total, page=page, size=size, pages=pages)
 
 
-@router.post("/monitors", response_model=ProcessMonitorResponse)
+@router.post("/monitors", response_model=ProcessMonitorResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_monitor(
     data: ProcessMonitorCreate,
     db: Session = Depends(get_db),
@@ -398,7 +399,7 @@ def get_monitor(monitor_id: int, db: Session = Depends(get_db), current_user: Sy
     return ProcessMonitorResponse.model_validate(monitor)
 
 
-@router.put("/monitors/{monitor_id}", response_model=ProcessMonitorResponse)
+@router.put("/monitors/{monitor_id}", response_model=ProcessMonitorResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_monitor(
     monitor_id: int, data: ProcessMonitorUpdate,
     db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user),
@@ -424,7 +425,7 @@ def update_monitor(
     return ProcessMonitorResponse.model_validate(monitor)
 
 
-@router.delete("/monitors/{monitor_id}")
+@router.delete("/monitors/{monitor_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_monitor(monitor_id: int, db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user)):
     monitor = db.query(QmsProcessMonitor).filter(QmsProcessMonitor.monitor_id == monitor_id).first()
     if not monitor:
@@ -460,7 +461,7 @@ def list_risks(
     if status:
         query = query.filter(QmsRiskIssue.status == status)
     if category:
-        query = query.filter(QmsRiskIssue.category.ilike(f"%{category}%"))
+        query = query.filter(QmsRiskIssue.category.ilike(f"%{escape_like(category)}%"))
 
     total = query.count()
     risks = query.order_by(QmsRiskIssue.created_at.desc()).offset((page - 1) * size).limit(size).all()
@@ -470,7 +471,7 @@ def list_risks(
     return PagedResponse(items=items, total=total, page=page, size=size, pages=pages)
 
 
-@router.post("/risks", response_model=RiskIssueResponse)
+@router.post("/risks", response_model=RiskIssueResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_risk(
     data: RiskIssueCreate,
     db: Session = Depends(get_db),
@@ -535,7 +536,7 @@ def get_risk(issue_id: int, db: Session = Depends(get_db), current_user: SysUser
     return RiskIssueResponse.model_validate(risk)
 
 
-@router.put("/risks/{issue_id}", response_model=RiskIssueResponse)
+@router.put("/risks/{issue_id}", response_model=RiskIssueResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_risk(
     issue_id: int, data: RiskIssueUpdate,
     db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user),
@@ -564,7 +565,7 @@ def update_risk(
     return RiskIssueResponse.model_validate(risk)
 
 
-@router.delete("/risks/{issue_id}")
+@router.delete("/risks/{issue_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_risk(issue_id: int, db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user)):
     risk = db.query(QmsRiskIssue).filter(QmsRiskIssue.issue_id == issue_id).first()
     if not risk:

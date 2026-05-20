@@ -5,7 +5,7 @@
 
 from pydantic import BaseModel, ConfigDict, Field
 from datetime import date, datetime
-from typing import Optional, List
+from typing import Literal, Optional, List
 
 
 # ============================================================
@@ -17,7 +17,7 @@ class TrainingCourseCreate(BaseModel):
     course_name: str
     category: Optional[str] = None
     duration_hours: Optional[float] = None
-    training_type: str = "INTERNAL"
+    training_type: Literal["INTERNAL", "EXTERNAL", "OJT", "ONLINE"] = "INTERNAL"
     recurrence_months: Optional[int] = None
     is_active: bool = True
 
@@ -26,7 +26,7 @@ class TrainingCourseUpdate(BaseModel):
     course_name: Optional[str] = None
     category: Optional[str] = None
     duration_hours: Optional[float] = None
-    training_type: Optional[str] = None
+    training_type: Optional[Literal["INTERNAL", "EXTERNAL", "OJT", "ONLINE"]] = None
     recurrence_months: Optional[int] = None
     is_active: Optional[bool] = None
 
@@ -56,7 +56,7 @@ class TrainingRecordCreate(BaseModel):
     trainee_id: str
     training_date: date
     score: Optional[float] = None
-    result: str = "PENDING"
+    result: Literal["PENDING", "PASS", "FAIL"] = "PENDING"
     next_due_date: Optional[date] = None
 
 
@@ -65,13 +65,13 @@ class TrainingRecordBulkCreate(BaseModel):
     training_date: date
     trainee_ids: List[str]
     score: Optional[float] = None
-    result: str = "PASS"
+    result: Literal["PENDING", "PASS", "FAIL"] = "PASS"
 
 
 class TrainingRecordUpdate(BaseModel):
     training_date: Optional[date] = None
     score: Optional[float] = None
-    result: Optional[str] = None
+    result: Optional[Literal["PENDING", "PASS", "FAIL"]] = None
     next_due_date: Optional[date] = None
 
 
@@ -96,25 +96,25 @@ class TrainingRecordResponse(BaseModel):
 # ============================================================
 
 class QualificationCreate(BaseModel):
-    qual_type: str
+    qual_type: Literal["INTERNAL_AUDITOR", "EXTERNAL_AUDITOR", "WELDER", "NDT", "OTHER"]
     qual_name: str
     holder_id: str
     issuing_body: Optional[str] = None
     certificate_no: Optional[str] = None
     issue_date: Optional[date] = None
     expiry_date: Optional[date] = None
-    status: str = "ACTIVE"
+    status: Literal["ACTIVE", "EXPIRED", "SUSPENDED", "REVOKED"] = "ACTIVE"
 
 
 class QualificationUpdate(BaseModel):
-    qual_type: Optional[str] = None
+    qual_type: Optional[Literal["INTERNAL_AUDITOR", "EXTERNAL_AUDITOR", "WELDER", "NDT", "OTHER"]] = None
     qual_name: Optional[str] = None
     holder_id: Optional[str] = None
     issuing_body: Optional[str] = None
     certificate_no: Optional[str] = None
     issue_date: Optional[date] = None
     expiry_date: Optional[date] = None
-    status: Optional[str] = None
+    status: Optional[Literal["ACTIVE", "EXPIRED", "SUSPENDED", "REVOKED"]] = None
 
 
 class QualificationResponse(BaseModel):
@@ -187,7 +187,7 @@ class QualAuditCreate(BaseModel):
     qual_id: int
     audit_date: date
     auditor: Optional[str] = None
-    result: str = "PASS"
+    result: Literal["PASS", "FAIL", "CONDITIONAL"] = "PASS"
     score: Optional[float] = None
     next_audit_date: Optional[date] = None
     remarks: Optional[str] = None
@@ -196,7 +196,7 @@ class QualAuditCreate(BaseModel):
 class QualAuditUpdate(BaseModel):
     audit_date: Optional[date] = None
     auditor: Optional[str] = None
-    result: Optional[str] = None
+    result: Optional[Literal["PASS", "FAIL", "CONDITIONAL"]] = None
     score: Optional[float] = None
     next_audit_date: Optional[date] = None
     remarks: Optional[str] = None

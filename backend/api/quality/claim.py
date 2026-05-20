@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 
-from api.deps import get_db, get_current_user
+from api.deps import get_db, get_current_user, require_role
 from core.audit import log_create, log_update
 from models.existing import SysUser, Claim, Product, Customer
 from schemas.claim import (
@@ -134,7 +134,7 @@ def get_claim(
     return _build_claim_response(claim, db)
 
 
-@router.post("/", response_model=ClaimResponse)
+@router.post("/", response_model=ClaimResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_claim(
     data: ClaimCreate,
     db: Session = Depends(get_db),
@@ -172,7 +172,7 @@ def create_claim(
     return _build_claim_response(claim, db)
 
 
-@router.put("/{claim_id}/d3", response_model=ClaimResponse)
+@router.put("/{claim_id}/d3", response_model=ClaimResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_claim_d3(
     claim_id: str,
     data: ClaimD3Update,
@@ -202,7 +202,7 @@ def update_claim_d3(
     return _build_claim_response(claim, db)
 
 
-@router.put("/{claim_id}/d4", response_model=ClaimResponse)
+@router.put("/{claim_id}/d4", response_model=ClaimResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_claim_d4(
     claim_id: str,
     data: ClaimD4Update,
@@ -229,7 +229,7 @@ def update_claim_d4(
     return _build_claim_response(claim, db)
 
 
-@router.put("/{claim_id}/d5", response_model=ClaimResponse)
+@router.put("/{claim_id}/d5", response_model=ClaimResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_claim_d5(
     claim_id: str,
     data: ClaimD5Update,
@@ -256,7 +256,7 @@ def update_claim_d5(
     return _build_claim_response(claim, db)
 
 
-@router.put("/{claim_id}/d6", response_model=ClaimResponse)
+@router.put("/{claim_id}/d6", response_model=ClaimResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_claim_d6(
     claim_id: str,
     data: ClaimD6Update,
@@ -283,7 +283,7 @@ def update_claim_d6(
     return _build_claim_response(claim, db)
 
 
-@router.put("/{claim_id}/d7", response_model=ClaimResponse)
+@router.put("/{claim_id}/d7", response_model=ClaimResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_claim_d7(
     claim_id: str,
     data: ClaimD7Update,
@@ -310,7 +310,7 @@ def update_claim_d7(
     return _build_claim_response(claim, db)
 
 
-@router.put("/{claim_id}/d8", response_model=ClaimResponse)
+@router.put("/{claim_id}/d8", response_model=ClaimResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_claim_d8(
     claim_id: str,
     data: ClaimD8Update,

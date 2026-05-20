@@ -308,7 +308,14 @@ const authStore = useAuthStore()
 const route = useRoute()
 const isCollapsed = ref(false)
 
-const activeMenu = computed(() => route.path)
+const activeMenu = computed(() => {
+  const fullPath = route.fullPath
+  // For document routes with query params, use fullPath
+  if (route.path === '/quality/document' && route.query.doc_type) {
+    return fullPath
+  }
+  return route.path
+})
 
 function handleLogout() {
   authStore.logout()

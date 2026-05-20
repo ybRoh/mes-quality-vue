@@ -9,12 +9,10 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query
-
-logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from api.deps import get_db, get_current_user
+from api.deps import get_db, get_current_user, require_role
 from core.audit import log_create, log_update, log_delete
 from models.existing import SysUser, Product, Customer
 from models.iatf import QmsPpap, QmsPpapElement
@@ -26,6 +24,7 @@ from schemas.ppap import (
 from schemas.common import PagedResponse
 from config import settings
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/quality/ppap", tags=["PPAP"])
 
 # PPAP 18개 요소 정의
@@ -126,7 +125,7 @@ def list_ppaps(
     return PagedResponse(items=items, total=total, page=page, size=size, pages=pages)
 
 
-@router.post("/", response_model=PpapResponse)
+@router.post("/", response_model=PpapResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_ppap(
     data: PpapCreate,
     db: Session = Depends(get_db),
@@ -234,7 +233,7 @@ def get_ppap(
     )
 
 
-@router.put("/{ppap_id}", response_model=PpapResponse)
+@router.put("/{ppap_id}", response_model=PpapResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_ppap(
     ppap_id: int,
     data: PpapUpdate,
@@ -261,11 +260,36 @@ def update_ppap(
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(ppap)
 
-    # 응답 구성 (간략화)
-    return get_ppap(ppap_id, db, current_user)
+    # Build response directly from already-loaded object
+    product = db.query(Product).filter(Product.product_id == ppap.product_id).first()
+    customer = db.query(Customer).filter(Customer.customer_id == ppap.customer_id).first() if ppap.customer_id else None
+
+    elements = db.query(QmsPpapElement).filter(QmsPpapElement.ppap_id == ppap_id).all()
+    required = [e for e in elements if e.is_required == 1]
+    completed = [e for e in required if e.status == "COMPLETED"]
+    completeness = round(len(completed) / len(required) * 100, 1) if required else 0.0
+
+    return PpapResponse(
+        ppap_id=ppap.ppap_id,
+        ppap_no=ppap.ppap_no,
+        product_id=ppap.product_id,
+        customer_id=ppap.customer_id,
+        submission_level=ppap.submission_level,
+        reason=ppap.reason,
+        status=ppap.status,
+        fmea_id=ppap.fmea_id,
+        cp_id=ppap.cp_id,
+        msa_id=ppap.msa_id,
+        apqp_id=ppap.apqp_id,
+        created_at=ppap.created_at,
+        updated_at=ppap.updated_at,
+        product_name=product.product_name if product else None,
+        customer_name=customer.customer_name if customer else None,
+        completeness_pct=completeness,
+    )
 
 
-@router.delete("/{ppap_id}")
+@router.delete("/{ppap_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_ppap(
     ppap_id: int,
     db: Session = Depends(get_db),
@@ -320,7 +344,7 @@ def get_ppap_elements(
     )
 
 
-@router.put("/elements/{element_id}", response_model=PpapElementResponse)
+@router.put("/elements/{element_id}", response_model=PpapElementResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_ppap_element(
     element_id: int,
     data: PpapElementUpdate,

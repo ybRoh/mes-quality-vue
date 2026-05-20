@@ -5,7 +5,7 @@ FMEA Pydantic 스키마
 
 from pydantic import BaseModel, ConfigDict, Field
 from datetime import date, datetime
-from typing import Optional, List
+from typing import Literal, Optional, List
 
 
 # ============================================================
@@ -16,9 +16,9 @@ class FmeaCreate(BaseModel):
     """FMEA 생성 요청"""
     fmea_no: str
     product_id: str
-    fmea_type: str = "PROCESS"
+    fmea_type: Literal["PROCESS", "DESIGN"] = "PROCESS"
     revision: int = 1
-    status: str = "DRAFT"
+    status: Literal["DRAFT", "IN_REVIEW", "APPROVED", "CLOSED"] = "DRAFT"
     prepared_by: Optional[str] = None
     approved_by: Optional[str] = None
 
@@ -26,9 +26,9 @@ class FmeaCreate(BaseModel):
 class FmeaUpdate(BaseModel):
     """FMEA 수정 요청"""
     product_id: Optional[str] = None
-    fmea_type: Optional[str] = None
+    fmea_type: Optional[Literal["PROCESS", "DESIGN"]] = None
     revision: Optional[int] = None
-    status: Optional[str] = None
+    status: Optional[Literal["DRAFT", "IN_REVIEW", "APPROVED", "CLOSED"]] = None
     prepared_by: Optional[str] = None
     approved_by: Optional[str] = None
 

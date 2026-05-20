@@ -3,7 +3,7 @@
 - API 응답 래퍼, 페이지네이션, 인증 관련
 """
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import date, datetime
 from typing import Optional, Generic, TypeVar, List
 
@@ -56,5 +56,5 @@ class LoginResponse(BaseModel):
 
 class LoginRequest(BaseModel):
     """로그인 요청"""
-    user_id: str
-    password: str
+    user_id: str = Field(min_length=1)
+    password: str = Field(min_length=1, max_length=128)

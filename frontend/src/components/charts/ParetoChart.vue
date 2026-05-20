@@ -1,12 +1,12 @@
 <template>
   <div class="chart-card">
     <div v-if="title" class="chart-title">{{ title }}</div>
-    <v-chart :option="chartOption" :autoresize="true" class="chart-container" />
+    <v-chart ref="chartRef" :option="chartOption" :autoresize="true" class="chart-container" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onBeforeUnmount } from 'vue'
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
@@ -28,6 +28,14 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   title: ''
+})
+
+const chartRef = ref<InstanceType<typeof VChart> | null>(null)
+
+onBeforeUnmount(() => {
+  if (chartRef.value) {
+    chartRef.value.dispose()
+  }
 })
 
 const chartOption = computed(() => {

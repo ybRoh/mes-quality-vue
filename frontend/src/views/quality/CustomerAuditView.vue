@@ -396,8 +396,11 @@ async function deleteItem(row: any) {
     await customerAuditApi.delete(row.cust_audit_id)
     ElMessage.success('삭제되었습니다.')
     loadList()
-  } catch {
-    // cancelled or error
+  } catch (e: unknown) {
+    if (e !== 'cancel' && String(e) !== 'cancel') {
+      console.warn('삭제 실패:', e)
+      ElMessage.error('삭제에 실패했습니다.')
+    }
   }
 }
 
@@ -440,21 +443,4 @@ async function submitForm() {
 </script>
 
 <style scoped>
-.kpi-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.kpi-row > * {
-  flex: 1;
-  min-width: 180px;
-}
-
-.filter-bar {
-  margin-bottom: 16px;
-  display: flex;
-  gap: 12px;
-}
 </style>

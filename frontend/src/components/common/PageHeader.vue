@@ -24,7 +24,7 @@ defineProps<{
   justify-content: space-between;
   margin-bottom: 20px;
   padding-bottom: 16px;
-  border-bottom: 2px solid var(--fiori-blue);
+  border-bottom: 2px solid var(--qms-primary);
 }
 
 .page-header-main {
@@ -36,13 +36,13 @@ defineProps<{
 .page-header-title {
   font-size: 22px;
   font-weight: 700;
-  color: var(--fiori-text);
+  color: var(--qms-text-primary);
   margin: 0;
 }
 
 .page-header-subtitle {
   font-size: 14px;
-  color: var(--fiori-text-light);
+  color: var(--qms-text-secondary);
 }
 
 .page-header-actions {

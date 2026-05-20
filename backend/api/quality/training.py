@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from api.deps import get_db, get_current_user
+from api.deps import get_db, get_current_user, require_role
 from core.audit import log_create, log_update, log_delete
 from models.existing import SysUser
 from models.iatf import (
@@ -29,6 +29,7 @@ from schemas.training import (
 )
 from schemas.common import PagedResponse
 from config import settings
+from api.quality.utils import escape_like
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/quality/training", tags=["교육/자격관리"])
@@ -77,7 +78,7 @@ def list_courses(
     return PagedResponse(items=items, total=total, page=page, size=size, pages=pages)
 
 
-@router.post("/courses", response_model=TrainingCourseResponse)
+@router.post("/courses", response_model=TrainingCourseResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_course(
     data: TrainingCourseCreate,
     db: Session = Depends(get_db),
@@ -119,7 +120,7 @@ def get_course(course_id: int, db: Session = Depends(get_db), current_user: SysU
     return resp
 
 
-@router.put("/courses/{course_id}", response_model=TrainingCourseResponse)
+@router.put("/courses/{course_id}", response_model=TrainingCourseResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_course(
     course_id: int, data: TrainingCourseUpdate,
     db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user),
@@ -150,7 +151,7 @@ def update_course(
     return resp
 
 
-@router.delete("/courses/{course_id}")
+@router.delete("/courses/{course_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_course(course_id: int, db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user)):
     course = db.query(QmsTrainingCourse).filter(QmsTrainingCourse.course_id == course_id).first()
     if not course:
@@ -211,7 +212,7 @@ def list_records(
     return PagedResponse(items=items, total=total, page=page, size=size, pages=pages)
 
 
-@router.post("/records", response_model=TrainingRecordResponse)
+@router.post("/records", response_model=TrainingRecordResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_record(
     data: TrainingRecordCreate,
     db: Session = Depends(get_db),
@@ -246,7 +247,7 @@ def create_record(
     return resp
 
 
-@router.post("/records/bulk", response_model=List[TrainingRecordResponse])
+@router.post("/records/bulk", response_model=List[TrainingRecordResponse], dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def bulk_create_records(
     data: TrainingRecordBulkCreate,
     db: Session = Depends(get_db),
@@ -289,7 +290,7 @@ def bulk_create_records(
     return result
 
 
-@router.put("/records/{record_id}", response_model=TrainingRecordResponse)
+@router.put("/records/{record_id}", response_model=TrainingRecordResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_record(
     record_id: int, data: TrainingRecordUpdate,
     db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user),
@@ -319,7 +320,7 @@ def update_record(
     return resp
 
 
-@router.delete("/records/{record_id}")
+@router.delete("/records/{record_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_record(record_id: int, db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user)):
     record = db.query(QmsTrainingRecord).filter(QmsTrainingRecord.record_id == record_id).first()
     if not record:
@@ -335,18 +336,23 @@ def delete_record(record_id: int, db: Session = Depends(get_db), current_user: S
     return {"message": "교육이수 기록이 삭제되었습니다"}
 
 
-@router.get("/records/due-soon", response_model=List[TrainingRecordResponse])
+@router.get("/records/due-soon", response_model=PagedResponse[TrainingRecordResponse])
 def due_soon_records(
     days: int = Query(90, ge=1),
+    page: int = Query(1, ge=1),
+    size: int = Query(settings.DEFAULT_PAGE_SIZE, ge=1, le=settings.MAX_PAGE_SIZE),
     db: Session = Depends(get_db),
     current_user: SysUser = Depends(get_current_user),
 ):
     """재교육 예정 알림 (기본 90일 이내)"""
     cutoff = date.today() + timedelta(days=days)
-    records = db.query(QmsTrainingRecord).filter(
+    query = db.query(QmsTrainingRecord).filter(
         QmsTrainingRecord.next_due_date <= cutoff,
         QmsTrainingRecord.next_due_date >= date.today(),
-    ).order_by(QmsTrainingRecord.next_due_date).all()
+    ).order_by(QmsTrainingRecord.next_due_date)
+
+    total = query.count()
+    records = query.offset((page - 1) * size).limit(size).all()
 
     c_ids = list(set(r.course_id for r in records))
     course_map = {}
@@ -354,14 +360,16 @@ def due_soon_records(
         courses = db.query(QmsTrainingCourse).filter(QmsTrainingCourse.course_id.in_(c_ids)).all()
         course_map = {c.course_id: c for c in courses}
 
-    result = []
+    items = []
     for r in records:
         resp = TrainingRecordResponse.model_validate(r)
         course = course_map.get(r.course_id)
         resp.course_name = course.course_name if course else None
         resp.course_no = course.course_no if course else None
-        result.append(resp)
-    return result
+        items.append(resp)
+
+    pages = (total + size - 1) // size
+    return PagedResponse(items=items, total=total, page=page, size=size, pages=pages)
 
 
 # ============================================================
@@ -409,7 +417,7 @@ def list_qualifications(
     return PagedResponse(items=items, total=total, page=page, size=size, pages=pages)
 
 
-@router.post("/qualifications", response_model=QualificationResponse)
+@router.post("/qualifications", response_model=QualificationResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_qualification(
     data: QualificationCreate,
     db: Session = Depends(get_db),
@@ -450,7 +458,7 @@ def get_qualification(qual_id: int, db: Session = Depends(get_db), current_user:
     return resp
 
 
-@router.put("/qualifications/{qual_id}", response_model=QualificationResponse)
+@router.put("/qualifications/{qual_id}", response_model=QualificationResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_qualification(
     qual_id: int, data: QualificationUpdate,
     db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user),
@@ -481,7 +489,7 @@ def update_qualification(
     return resp
 
 
-@router.delete("/qualifications/{qual_id}")
+@router.delete("/qualifications/{qual_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_qualification(qual_id: int, db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user)):
     qual = db.query(QmsQualification).filter(QmsQualification.qual_id == qual_id).first()
     if not qual:
@@ -498,27 +506,34 @@ def delete_qualification(qual_id: int, db: Session = Depends(get_db), current_us
     return {"message": "자격이 삭제되었습니다"}
 
 
-@router.get("/qualifications/expiring", response_model=List[QualificationResponse])
+@router.get("/qualifications/expiring", response_model=PagedResponse[QualificationResponse])
 def expiring_qualifications(
     days: int = Query(90, ge=1),
+    page: int = Query(1, ge=1),
+    size: int = Query(settings.DEFAULT_PAGE_SIZE, ge=1, le=settings.MAX_PAGE_SIZE),
     db: Session = Depends(get_db),
     current_user: SysUser = Depends(get_current_user),
 ):
     """만료 예정 자격 (기본 90일 이내)"""
     cutoff = date.today() + timedelta(days=days)
-    quals = db.query(QmsQualification).filter(
+    query = db.query(QmsQualification).filter(
         QmsQualification.expiry_date <= cutoff,
         QmsQualification.expiry_date >= date.today(),
         QmsQualification.status == "ACTIVE",
-    ).order_by(QmsQualification.expiry_date).all()
+    ).order_by(QmsQualification.expiry_date)
 
-    result = []
+    total = query.count()
+    quals = query.offset((page - 1) * size).limit(size).all()
+
+    items = []
     for q in quals:
         resp = QualificationResponse.model_validate(q)
         resp.days_until_expiry = (q.expiry_date - date.today()).days
         resp.audit_count = 0
-        result.append(resp)
-    return result
+        items.append(resp)
+
+    pages = (total + size - 1) // size
+    return PagedResponse(items=items, total=total, page=page, size=size, pages=pages)
 
 
 # ============================================================
@@ -538,7 +553,7 @@ def list_competency(
     if employee_id:
         query = query.filter(QmsCompetencyMatrix.employee_id == employee_id)
     if skill_name:
-        query = query.filter(QmsCompetencyMatrix.skill_name.ilike(f"%{skill_name}%"))
+        query = query.filter(QmsCompetencyMatrix.skill_name.ilike(f"%{escape_like(skill_name)}%"))
 
     total = query.count()
     items = query.order_by(QmsCompetencyMatrix.employee_id, QmsCompetencyMatrix.skill_name).offset(
@@ -552,7 +567,7 @@ def list_competency(
     )
 
 
-@router.post("/competency", response_model=CompetencyMatrixResponse)
+@router.post("/competency", response_model=CompetencyMatrixResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_competency(
     data: CompetencyMatrixCreate,
     db: Session = Depends(get_db),
@@ -584,7 +599,7 @@ def create_competency(
     return CompetencyMatrixResponse.model_validate(matrix)
 
 
-@router.put("/competency/{matrix_id}", response_model=CompetencyMatrixResponse)
+@router.put("/competency/{matrix_id}", response_model=CompetencyMatrixResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_competency(
     matrix_id: int, data: CompetencyMatrixUpdate,
     db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user),
@@ -612,7 +627,7 @@ def update_competency(
     return CompetencyMatrixResponse.model_validate(matrix)
 
 
-@router.delete("/competency/{matrix_id}")
+@router.delete("/competency/{matrix_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_competency(matrix_id: int, db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user)):
     matrix = db.query(QmsCompetencyMatrix).filter(QmsCompetencyMatrix.matrix_id == matrix_id).first()
     if not matrix:
@@ -628,17 +643,24 @@ def delete_competency(matrix_id: int, db: Session = Depends(get_db), current_use
     return {"message": "역량 데이터가 삭제되었습니다"}
 
 
-@router.get("/competency/gap-analysis", response_model=List[GapAnalysisResponse])
+@router.get("/competency/gap-analysis", response_model=PagedResponse[GapAnalysisResponse])
 def gap_analysis(
+    page: int = Query(1, ge=1),
+    size: int = Query(settings.DEFAULT_PAGE_SIZE, ge=1, le=settings.MAX_PAGE_SIZE),
     db: Session = Depends(get_db),
     current_user: SysUser = Depends(get_current_user),
 ):
     """직원별 Gap 분석"""
-    employees = db.query(QmsCompetencyMatrix.employee_id).distinct().all()
+    # Load all competency matrix rows in a single query and group in Python
+    all_rows = db.query(QmsCompetencyMatrix).all()
+    from collections import defaultdict
+    grouped = defaultdict(list)
+    for row in all_rows:
+        grouped[row.employee_id].append(row)
 
-    result = []
-    for (emp_id,) in employees:
-        rows = db.query(QmsCompetencyMatrix).filter(QmsCompetencyMatrix.employee_id == emp_id).all()
+    all_results = []
+    for emp_id in sorted(grouped.keys()):
+        rows = grouped[emp_id]
         total_skills = len(rows)
         gaps = [r.gap or 0 for r in rows]
         avg_gap = sum(gaps) / total_skills if total_skills else 0
@@ -646,7 +668,7 @@ def gap_analysis(
         skills_with_gap = sum(1 for g in gaps if g > 0)
         skills_met = sum(1 for g in gaps if g <= 0)
 
-        result.append(GapAnalysisResponse(
+        all_results.append(GapAnalysisResponse(
             employee_id=emp_id,
             total_skills=total_skills,
             avg_gap=round(avg_gap, 1),
@@ -654,7 +676,11 @@ def gap_analysis(
             skills_with_gap=skills_with_gap,
             skills_met=skills_met,
         ))
-    return result
+
+    total = len(all_results)
+    items = all_results[(page - 1) * size : page * size]
+    pages = (total + size - 1) // size
+    return PagedResponse(items=items, total=total, page=page, size=size, pages=pages)
 
 
 # ============================================================
@@ -697,7 +723,7 @@ def list_qual_audits(
     return PagedResponse(items=items, total=total, page=page, size=size, pages=pages)
 
 
-@router.post("/qual-audits", response_model=QualAuditResponse)
+@router.post("/qual-audits", response_model=QualAuditResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_qual_audit(
     data: QualAuditCreate,
     db: Session = Depends(get_db),
@@ -727,7 +753,7 @@ def create_qual_audit(
     return resp
 
 
-@router.put("/qual-audits/{qual_audit_id}", response_model=QualAuditResponse)
+@router.put("/qual-audits/{qual_audit_id}", response_model=QualAuditResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_qual_audit(
     qual_audit_id: int, data: QualAuditUpdate,
     db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user),
@@ -756,7 +782,7 @@ def update_qual_audit(
     return resp
 
 
-@router.delete("/qual-audits/{qual_audit_id}")
+@router.delete("/qual-audits/{qual_audit_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_qual_audit(qual_audit_id: int, db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user)):
     audit = db.query(QmsQualAudit).filter(QmsQualAudit.qual_audit_id == qual_audit_id).first()
     if not audit:

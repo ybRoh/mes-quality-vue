@@ -484,8 +484,11 @@ async function deletePlan(row: any) {
       findings.value = []
     }
     loadPlans()
-  } catch {
-    // cancelled or error
+  } catch (e: unknown) {
+    if (e !== 'cancel' && String(e) !== 'cancel') {
+      console.warn('삭제 실패:', e)
+      ElMessage.error('삭제에 실패했습니다.')
+    }
   }
 }
 
@@ -619,19 +622,6 @@ async function loadSummary() {
 </script>
 
 <style scoped>
-.filter-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.kpi-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
 .plan-detail-header {
   display: flex;
   align-items: center;

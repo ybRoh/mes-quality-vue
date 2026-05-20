@@ -419,8 +419,11 @@ async function deleteItem(row: any) {
       drawings.value = []
     }
     loadList()
-  } catch {
-    // cancelled or error
+  } catch (e: unknown) {
+    if (e !== 'cancel' && String(e) !== 'cancel') {
+      console.warn('삭제 실패:', e)
+      ElMessage.error('삭제에 실패했습니다.')
+    }
   }
 }
 
@@ -522,13 +525,6 @@ async function submitDrawing() {
 </script>
 
 <style scoped>
-.filter-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
 .spec-detail-header {
   display: flex;
   align-items: center;

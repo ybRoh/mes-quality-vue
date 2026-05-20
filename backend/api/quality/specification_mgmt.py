@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from api.deps import get_db, get_current_user
+from api.deps import get_db, get_current_user, require_role
 from core.audit import log_create, log_update, log_delete
 from models.existing import SysUser
 from models.iatf import (
@@ -74,7 +74,7 @@ def list_specifications(
     return PagedResponse(items=items, total=total, page=page, size=size, pages=pages)
 
 
-@router.post("/", response_model=SpecificationResponse)
+@router.post("/", response_model=SpecificationResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_specification(
     data: SpecificationCreate,
     db: Session = Depends(get_db),
@@ -117,7 +117,7 @@ def get_specification(spec_id: int, db: Session = Depends(get_db), current_user:
     return resp
 
 
-@router.put("/{spec_id}", response_model=SpecificationResponse)
+@router.put("/{spec_id}", response_model=SpecificationResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_specification(
     spec_id: int, data: SpecificationUpdate,
     db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user),
@@ -148,7 +148,7 @@ def update_specification(
     return resp
 
 
-@router.delete("/{spec_id}")
+@router.delete("/{spec_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_specification(spec_id: int, db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user)):
     spec = db.query(QmsSpecification).filter(QmsSpecification.spec_mgmt_id == spec_id).first()
     if not spec:
@@ -189,7 +189,7 @@ def list_drawings(
     return [DrawingRevisionResponse.model_validate(d) for d in drawings]
 
 
-@router.post("/{spec_id}/drawings", response_model=DrawingRevisionResponse)
+@router.post("/{spec_id}/drawings", response_model=DrawingRevisionResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_drawing(
     spec_id: int, data: DrawingRevisionCreate,
     db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user),
@@ -246,7 +246,7 @@ def list_si_faq(
     )
 
 
-@router.post("/si-faq", response_model=SiFaqResponse)
+@router.post("/si-faq", response_model=SiFaqResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_si_faq(
     data: SiFaqCreate,
     db: Session = Depends(get_db),
@@ -269,7 +269,7 @@ def create_si_faq(
     return SiFaqResponse.model_validate(faq)
 
 
-@router.put("/si-faq/{faq_id}", response_model=SiFaqResponse)
+@router.put("/si-faq/{faq_id}", response_model=SiFaqResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_si_faq(
     faq_id: int, data: SiFaqUpdate,
     db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user),
@@ -295,7 +295,7 @@ def update_si_faq(
     return SiFaqResponse.model_validate(faq)
 
 
-@router.delete("/si-faq/{faq_id}")
+@router.delete("/si-faq/{faq_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_si_faq(faq_id: int, db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user)):
     faq = db.query(QmsSiFaq).filter(QmsSiFaq.faq_id == faq_id).first()
     if not faq:
@@ -342,7 +342,7 @@ def list_csr(
     )
 
 
-@router.post("/csr", response_model=CsrResponse)
+@router.post("/csr", response_model=CsrResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def create_csr(
     data: CsrCreate,
     db: Session = Depends(get_db),
@@ -378,7 +378,7 @@ def get_csr(csr_id: int, db: Session = Depends(get_db), current_user: SysUser = 
     return CsrResponse.model_validate(csr)
 
 
-@router.put("/csr/{csr_id}", response_model=CsrResponse)
+@router.put("/csr/{csr_id}", response_model=CsrResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
 def update_csr(
     csr_id: int, data: CsrUpdate,
     db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user),
@@ -404,7 +404,7 @@ def update_csr(
     return CsrResponse.model_validate(csr)
 
 
-@router.delete("/csr/{csr_id}")
+@router.delete("/csr/{csr_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
 def delete_csr(csr_id: int, db: Session = Depends(get_db), current_user: SysUser = Depends(get_current_user)):
     csr = db.query(QmsCsr).filter(QmsCsr.csr_id == csr_id).first()
     if not csr:
