@@ -34,14 +34,14 @@ defineProps<{
 }
 
 .page-header-title {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--qms-text-primary);
   margin: 0;
 }
 
 .page-header-subtitle {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--qms-text-secondary);
 }
 

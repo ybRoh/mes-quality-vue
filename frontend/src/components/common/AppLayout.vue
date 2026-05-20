@@ -27,6 +27,30 @@
           <template #title>대시보드</template>
         </el-menu-item>
 
+        <!-- 성과지표관리 -->
+        <el-sub-menu index="kpi">
+          <template #title>
+            <el-icon><DataLine /></el-icon>
+            <span>성과지표관리</span>
+          </template>
+          <el-menu-item index="/quality/kpi-dashboard">
+            <el-icon><Odometer /></el-icon>
+            <span>KPI 대시보드</span>
+          </el-menu-item>
+          <el-menu-item index="/quality/kpi-definition">
+            <el-icon><Setting /></el-icon>
+            <span>KPI 정의</span>
+          </el-menu-item>
+          <el-menu-item index="/quality/process-monitor">
+            <el-icon><Monitor /></el-icon>
+            <span>공정 모니터링</span>
+          </el-menu-item>
+          <el-menu-item index="/quality/risk-issue">
+            <el-icon><Warning /></el-icon>
+            <span>리스크/이슈</span>
+          </el-menu-item>
+        </el-sub-menu>
+
         <!-- 생산분석 -->
         <el-sub-menu index="analysis">
           <template #title>
@@ -199,29 +223,6 @@
           </el-menu-item>
         </el-sub-menu>
 
-        <!-- 성과지표관리 -->
-        <el-sub-menu index="kpi">
-          <template #title>
-            <el-icon><DataLine /></el-icon>
-            <span>성과지표관리</span>
-          </template>
-          <el-menu-item index="/quality/kpi-dashboard">
-            <el-icon><Odometer /></el-icon>
-            <span>KPI 대시보드</span>
-          </el-menu-item>
-          <el-menu-item index="/quality/kpi-definition">
-            <el-icon><Setting /></el-icon>
-            <span>KPI 정의</span>
-          </el-menu-item>
-          <el-menu-item index="/quality/process-monitor">
-            <el-icon><Monitor /></el-icon>
-            <span>공정 모니터링</span>
-          </el-menu-item>
-          <el-menu-item index="/quality/risk-issue">
-            <el-icon><Warning /></el-icon>
-            <span>리스크/이슈</span>
-          </el-menu-item>
-        </el-sub-menu>
       </el-menu>
     </el-aside>
 
@@ -375,27 +376,32 @@ function handleLogout() {
 
 /* Compact menu item spacing */
 .sidebar-menu :deep(.el-menu-item) {
-  height: 36px;
-  line-height: 36px;
-  font-size: 13px;
+  height: 30px;
+  line-height: 30px;
+  font-size: 12px;
 }
 
 .sidebar-menu :deep(.el-sub-menu__title) {
-  height: 40px;
-  line-height: 40px;
-  font-size: 13px;
+  height: 32px;
+  line-height: 32px;
+  font-size: 12px;
 }
 
 .sidebar-menu :deep(.el-sub-menu .el-menu-item) {
-  height: 32px;
-  line-height: 32px;
-  padding-left: 50px !important;
-  font-size: 13px;
+  height: 28px;
+  line-height: 28px;
+  padding-left: 46px !important;
+  font-size: 12px;
 }
 
 .sidebar-menu :deep(.el-menu-item .el-icon),
 .sidebar-menu :deep(.el-sub-menu__title .el-icon) {
-  font-size: 16px;
+  font-size: 14px;
+  margin-right: 4px;
+}
+
+.sidebar-menu :deep(.el-sub-menu .el-menu) {
+  padding: 0;
 }
 
 .app-main-container {
