@@ -373,6 +373,31 @@ function handleLogout() {
   width: 240px;
 }
 
+/* Compact menu item spacing */
+.sidebar-menu :deep(.el-menu-item) {
+  height: 36px;
+  line-height: 36px;
+  font-size: 13px;
+}
+
+.sidebar-menu :deep(.el-sub-menu__title) {
+  height: 40px;
+  line-height: 40px;
+  font-size: 13px;
+}
+
+.sidebar-menu :deep(.el-sub-menu .el-menu-item) {
+  height: 32px;
+  line-height: 32px;
+  padding-left: 50px !important;
+  font-size: 13px;
+}
+
+.sidebar-menu :deep(.el-menu-item .el-icon),
+.sidebar-menu :deep(.el-sub-menu__title .el-icon) {
+  font-size: 16px;
+}
+
 .app-main-container {
   flex: 1;
   overflow: hidden;
