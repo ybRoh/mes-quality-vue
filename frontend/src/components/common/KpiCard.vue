@@ -58,26 +58,26 @@ const trendClass = computed(() => {
 <style scoped>
 .kpi-card {
   background: var(--qms-bg-white);
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-  padding: 20px;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: 10px 14px;
   border-top: 3px solid var(--qms-primary);
   transition: box-shadow 0.2s;
 }
 
 .kpi-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
 }
 
 .kpi-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 4px;
 }
 
 .kpi-title {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--qms-text-secondary);
   text-transform: uppercase;
@@ -88,7 +88,7 @@ const trendClass = computed(() => {
   display: flex;
   align-items: center;
   gap: 2px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
 }
 
@@ -105,23 +105,23 @@ const trendClass = computed(() => {
 }
 
 .kpi-value {
-  font-size: 32px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1.2;
 }
 
 .kpi-unit {
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 400;
   color: var(--qms-text-secondary);
-  margin-left: 4px;
+  margin-left: 3px;
 }
 
 .kpi-footer {
-  margin-top: 12px;
-  padding-top: 12px;
+  margin-top: 6px;
+  padding-top: 6px;
   border-top: 1px solid var(--qms-border);
-  font-size: 12px;
+  font-size: 11px;
   color: var(--qms-text-secondary);
 }
 </style>

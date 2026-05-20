@@ -22,26 +22,26 @@ defineProps<{
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
   border-bottom: 2px solid var(--qms-primary);
 }
 
 .page-header-main {
   display: flex;
   align-items: baseline;
-  gap: 12px;
+  gap: 8px;
 }
 
 .page-header-title {
-  font-size: 22px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--qms-text-primary);
   margin: 0;
 }
 
 .page-header-subtitle {
-  font-size: 14px;
+  font-size: 12px;
   color: var(--qms-text-secondary);
 }
 

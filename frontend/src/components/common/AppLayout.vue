@@ -456,6 +456,6 @@ function handleLogout() {
   flex: 1;
   overflow-y: auto;
   background-color: var(--qms-bg-light);
-  padding: 20px;
+  padding: 12px 16px;
 }
 </style>
