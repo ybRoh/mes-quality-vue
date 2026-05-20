@@ -8,7 +8,7 @@ from typing import List, Optional
 from sqlalchemy import func, case, extract
 from sqlalchemy.orm import Session
 
-from models.existing import Production, Product, Machine, Customer
+from models.existing import Production, Product, Machine, Customer, NgDetail
 
 
 def get_daily_production(db: Session, target_date: date) -> List[dict]:
@@ -562,3 +562,141 @@ def get_spec_detail(
             "worker_id": r.worker_id,
         })
     return items
+
+
+# ── 불량유형별 분석 ──
+
+NG_TYPE_NAMES = {
+    "DIMENSION": "치수불량",
+    "SURFACE": "표면불량",
+    "BURR": "버",
+    "SHORT_SHOT": "미성형",
+    "WRINKLE": "주름",
+    "WELD_LINE": "웰드라인",
+    "CHATTER": "채터",
+    "DEFORM": "변형",
+    "CRACK": "크랙",
+    "BURN": "소손",
+    "SINK_MARK": "싱크마크",
+    "TAPER": "테이퍼",
+    "SCRATCH": "스크래치",
+    "DISCOLOR": "변색",
+    "SPRING_BACK": "스프링백",
+    "DENT": "덴트",
+    "SILVER": "실버",
+    "ROUNDNESS": "진원도",
+    "FLOW_MARK": "플로우마크",
+    "TOOL_MARK": "공구자국",
+}
+
+
+def get_defect_by_type(db: Session, from_date: date, to_date: date) -> List[dict]:
+    """불량유형별 점유율 (파레토)"""
+    results = (
+        db.query(
+            NgDetail.ng_type,
+            func.sum(NgDetail.ng_qty).label("total_qty"),
+            func.count(NgDetail.ng_detail_id).label("occurrence"),
+        )
+        .join(Production, NgDetail.prod_id == Production.prod_id)
+        .filter(Production.work_date.between(from_date, to_date))
+        .group_by(NgDetail.ng_type)
+        .order_by(func.sum(NgDetail.ng_qty).desc())
+        .all()
+    )
+
+    grand_total = sum(r.total_qty or 0 for r in results)
+    cumulative = 0
+    items = []
+    for r in results:
+        total = r.total_qty or 0
+        cumulative += total
+        items.append({
+            "ng_type": r.ng_type,
+            "ng_type_name": NG_TYPE_NAMES.get(r.ng_type, r.ng_type),
+            "total_qty": total,
+            "occurrence": r.occurrence,
+            "share_pct": round(total / grand_total * 100, 2) if grand_total > 0 else 0.0,
+            "cumulative_pct": round(cumulative / grand_total * 100, 2) if grand_total > 0 else 0.0,
+        })
+    return items
+
+
+def get_defect_by_product(db: Session, from_date: date, to_date: date) -> List[dict]:
+    """제품별 불량 분석"""
+    results = (
+        db.query(
+            Production.product_id,
+            Product.product_name,
+            NgDetail.ng_type,
+            func.sum(NgDetail.ng_qty).label("ng_qty"),
+        )
+        .join(Production, NgDetail.prod_id == Production.prod_id)
+        .outerjoin(Product, Production.product_id == Product.product_id)
+        .filter(Production.work_date.between(from_date, to_date))
+        .group_by(Production.product_id, Product.product_name, NgDetail.ng_type)
+        .order_by(Production.product_id, func.sum(NgDetail.ng_qty).desc())
+        .all()
+    )
+
+    # 제품별로 그룹핑
+    product_map = {}
+    for r in results:
+        pid = r.product_id
+        if pid not in product_map:
+            product_map[pid] = {
+                "product_id": pid,
+                "product_name": r.product_name,
+                "total_ng": 0,
+                "types": [],
+            }
+        qty = r.ng_qty or 0
+        product_map[pid]["total_ng"] += qty
+        product_map[pid]["types"].append({
+            "ng_type": r.ng_type,
+            "ng_type_name": NG_TYPE_NAMES.get(r.ng_type, r.ng_type),
+            "ng_qty": qty,
+        })
+
+    items = sorted(product_map.values(), key=lambda x: x["total_ng"], reverse=True)
+    return items
+
+
+def get_defect_trend(db: Session, from_date: date, to_date: date) -> List[dict]:
+    """불량유형별 월별 추이"""
+    year_month_expr = func.to_char(Production.work_date, "YYYY-MM")
+
+    results = (
+        db.query(
+            year_month_expr.label("year_month"),
+            NgDetail.ng_type,
+            func.sum(NgDetail.ng_qty).label("ng_qty"),
+        )
+        .join(Production, NgDetail.prod_id == Production.prod_id)
+        .filter(Production.work_date.between(from_date, to_date))
+        .group_by(year_month_expr, NgDetail.ng_type)
+        .order_by(year_month_expr, NgDetail.ng_type)
+        .all()
+    )
+
+    # 월별-유형별 매트릭스 구성
+    months_set = set()
+    types_set = set()
+    data_map = {}
+    for r in results:
+        months_set.add(r.year_month)
+        types_set.add(r.ng_type)
+        data_map[(r.year_month, r.ng_type)] = r.ng_qty or 0
+
+    months = sorted(months_set)
+    types = sorted(types_set)
+
+    series = []
+    for ng_type in types:
+        series.append({
+            "ng_type": ng_type,
+            "ng_type_name": NG_TYPE_NAMES.get(ng_type, ng_type),
+            "data": [data_map.get((m, ng_type), 0) for m in months],
+        })
+
+    return {"months": months, "series": series}

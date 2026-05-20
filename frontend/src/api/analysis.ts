@@ -90,4 +90,17 @@ export const analysisApi = {
   getSpecDetail(params: SpecParams) {
     return client.get('/analysis/specification/detail', { params })
   },
+
+  // 불량유형별 분석 (Defect Analysis)
+  getDefectByType(params: DateRangeParams) {
+    return client.get('/analysis/defect/by-type', { params })
+  },
+
+  getDefectByProduct(params: DateRangeParams) {
+    return client.get('/analysis/defect/by-product', { params })
+  },
+
+  getDefectTrend(params: DateRangeParams) {
+    return client.get('/analysis/defect/trend', { params })
+  },
 }

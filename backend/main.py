@@ -37,8 +37,8 @@ app.add_middleware(
         "http://localhost:3000",   # 대체 개발 서버
     ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 # ── 라우터 등록 ──
@@ -51,6 +51,7 @@ from api.analysis.period import router as period_router
 from api.analysis.type_based import router as type_router
 from api.analysis.equipment import router as equipment_router
 from api.analysis.specification import router as spec_router
+from api.analysis.defect import router as defect_router
 
 # 품질 관리
 from api.quality.spc import router as spc_router
@@ -61,6 +62,12 @@ from api.quality.ppap import router as ppap_router
 from api.quality.apqp import router as apqp_router
 from api.quality.claim import router as claim_router
 from api.quality.inspection import router as inspection_router
+from api.quality.document import router as document_router
+from api.quality.audit import router as audit_router
+from api.quality.training import router as training_router
+from api.quality.specification_mgmt import router as specification_router
+from api.quality.customer_audit import router as customer_audit_router
+from api.quality.kpi import router as kpi_router
 
 # 기준정보
 from api.master.product import router as product_router
@@ -76,6 +83,7 @@ app.include_router(period_router)
 app.include_router(type_router)
 app.include_router(equipment_router)
 app.include_router(spec_router)
+app.include_router(defect_router)
 
 # 품질 관리
 app.include_router(spc_router)
@@ -86,6 +94,12 @@ app.include_router(ppap_router)
 app.include_router(apqp_router)
 app.include_router(claim_router)
 app.include_router(inspection_router)
+app.include_router(document_router)
+app.include_router(audit_router)
+app.include_router(training_router)
+app.include_router(specification_router)
+app.include_router(customer_audit_router)
+app.include_router(kpi_router)
 
 # 기준정보
 app.include_router(product_router)

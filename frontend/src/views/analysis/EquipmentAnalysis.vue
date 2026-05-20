@@ -7,10 +7,6 @@
       <el-tab-pane label="생산능력" name="capacity">
         <div class="filter-bar">
           <DateRangePicker v-model="dateRange" />
-          <el-button type="primary" size="small" @click="loadCapacityData">
-            <el-icon><Search /></el-icon>
-            조회
-          </el-button>
         </div>
 
         <BarChart
@@ -29,10 +25,6 @@
       <el-tab-pane label="S/T 달성율" name="stAchievement">
         <div class="filter-bar">
           <DateRangePicker v-model="stDateRange" />
-          <el-button type="primary" size="small" @click="loadStData">
-            <el-icon><Search /></el-icon>
-            조회
-          </el-button>
         </div>
 
         <BarChart
@@ -44,10 +36,10 @@
 
         <div class="card" style="margin-top: 16px;">
           <DataTable :data="stData" :columns="stColumns" :show-export="true">
-            <template #achievement_rate="{ row }">
+            <template #st_achievement="{ row }">
               <el-progress
-                :percentage="row.achievement_rate"
-                :status="row.achievement_rate >= 95 ? 'success' : row.achievement_rate >= 80 ? '' : 'exception'"
+                :percentage="row.st_achievement || 0"
+                :status="(row.st_achievement || 0) >= 95 ? 'success' : (row.st_achievement || 0) >= 80 ? '' : 'exception'"
                 :stroke-width="14"
                 :text-inside="true"
                 style="width: 120px;"
@@ -61,10 +53,6 @@
       <el-tab-pane label="Type별 점유율" name="typeShare">
         <div class="filter-bar">
           <DateRangePicker v-model="tsDateRange" />
-          <el-button type="primary" size="small" @click="loadTypeShareData">
-            <el-icon><Search /></el-icon>
-            조회
-          </el-button>
         </div>
 
         <div class="chart-row">
@@ -86,8 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { Search } from '@element-plus/icons-vue'
+import { ref, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/common/PageHeader.vue'
 import DateRangePicker from '@/components/common/DateRangePicker.vue'
@@ -107,22 +94,25 @@ const tsDateRange = ref<[string, string]>([...dateRange.value] as [string, strin
 const capacityData = ref<any[]>([])
 const capacityChart = ref<{ categories: string[]; series: { name: string; data: number[] }[] }>({ categories: [], series: [] })
 const capacityColumns: TableColumn[] = [
-  { prop: 'machine_no', label: '설비번호', width: 120 },
-  { prop: 'machine_type', label: '설비유형', width: 120 },
+  { prop: 'machine_id', label: '설비번호', width: 120 },
+  { prop: 'machine_name', label: '설비명', width: 120 },
+  { prop: 'process_type', label: '설비유형', width: 120 },
   { prop: 'total_qty', label: '총 생산', width: 120, sortable: true, align: 'right' },
-  { prop: 'work_hours', label: '가동시간(h)', width: 110, align: 'right', formatter: (v: number) => v?.toFixed(1) || '-' },
+  { prop: 'operating_hours', label: '가동시간(h)', width: 110, align: 'right', formatter: (v: number) => v?.toFixed(1) || '-' },
   { prop: 'pieces_per_hour', label: 'EA/hr', width: 100, sortable: true, align: 'right', formatter: (v: number) => v?.toFixed(1) || '-' },
-  { prop: 'utilization_rate', label: '가동율(%)', width: 100, align: 'right', formatter: (v: number) => v?.toFixed(1) || '-' }
+  { prop: 'capacity_rate', label: '가동율(%)', width: 100, align: 'right', formatter: (v: number) => v?.toFixed(1) || '-' }
 ]
 
 // Tab 2
 const stData = ref<any[]>([])
 const stChart = ref<{ categories: string[]; series: { name: string; data: number[] }[] }>({ categories: [], series: [] })
 const stColumns: TableColumn[] = [
-  { prop: 'machine_no', label: '설비번호', width: 120 },
-  { prop: 'standard_time', label: '표준시간(초)', width: 120, align: 'right' },
-  { prop: 'actual_time', label: '실제시간(초)', width: 120, align: 'right', formatter: (v: number) => v?.toFixed(1) || '-' },
-  { prop: 'achievement_rate', label: '달성율(%)', width: 160, align: 'center' }
+  { prop: 'machine_id', label: '설비번호', width: 120 },
+  { prop: 'machine_name', label: '설비명', width: 120 },
+  { prop: 'product_name', label: '제품명', width: 150 },
+  { prop: 'std_cycle_time', label: '표준시간(초)', width: 120, align: 'right' },
+  { prop: 'avg_cycle_time', label: '실제시간(초)', width: 120, align: 'right', formatter: (v: number) => v?.toFixed(1) || '-' },
+  { prop: 'st_achievement', label: '달성율(%)', width: 160, align: 'center' }
 ]
 
 // Tab 3
@@ -130,11 +120,23 @@ const typeShareData = ref<any[]>([])
 const typeSharePie = ref<{ name: string; value: number }[]>([])
 const typeShareBar = ref<{ categories: string[]; series: { name: string; data: number[] }[] }>({ categories: [], series: [] })
 const typeShareColumns: TableColumn[] = [
-  { prop: 'machine_type', label: '설비유형', width: 120 },
+  { prop: 'process_name', label: '설비유형', width: 120 },
   { prop: 'machine_count', label: '설비수', width: 80, align: 'center' },
   { prop: 'total_qty', label: '총 생산', width: 120, sortable: true, align: 'right' },
   { prop: 'share_pct', label: '점유율(%)', width: 100, align: 'right', formatter: (v: number) => v?.toFixed(1) || '0.0' }
 ]
+
+// 탭 전환 시 자동 로드
+watch(activeTab, (tab) => {
+  if (tab === 'capacity') loadCapacityData()
+  else if (tab === 'stAchievement') loadStData()
+  else if (tab === 'typeShare') loadTypeShareData()
+})
+
+// 날짜 변경 시 자동 로드
+watch(dateRange, () => { if (activeTab.value === 'capacity') loadCapacityData() }, { deep: true })
+watch(stDateRange, () => { if (activeTab.value === 'stAchievement') loadStData() }, { deep: true })
+watch(tsDateRange, () => { if (activeTab.value === 'typeShare') loadTypeShareData() }, { deep: true })
 
 onMounted(() => {
   loadCapacityData()
@@ -145,10 +147,13 @@ async function loadCapacityData() {
     const res = await analysisApi.getEquipmentCapacity({ from: dateRange.value[0], to: dateRange.value[1] })
     const raw = res.data.items || res.data
     const items = Array.isArray(raw) ? raw : []
-    capacityData.value = items
+    capacityData.value = items.map((r: any) => ({
+      ...r,
+      pieces_per_hour: r.operating_hours > 0 ? Math.round(r.total_qty / r.operating_hours * 10) / 10 : 0
+    }))
     capacityChart.value = {
-      categories: items.map((r: any) => r.machine_no),
-      series: [{ name: 'EA/hr', data: items.map((r: any) => r.pieces_per_hour) }]
+      categories: capacityData.value.map((r: any) => r.machine_name),
+      series: [{ name: 'EA/hr', data: capacityData.value.map((r: any) => r.pieces_per_hour) }]
     }
   } catch (e) {
     console.warn('설비 생산능력 조회 실패:', e)
@@ -165,8 +170,8 @@ async function loadStData() {
     const items = Array.isArray(raw) ? raw : []
     stData.value = items
     stChart.value = {
-      categories: items.map((r: any) => r.machine_no),
-      series: [{ name: '달성율', data: items.map((r: any) => r.achievement_rate) }]
+      categories: items.map((r: any) => r.machine_name),
+      series: [{ name: '달성율', data: items.map((r: any) => r.st_achievement || 0) }]
     }
   } catch (e) {
     console.warn('S/T 달성율 조회 실패:', e)
@@ -182,9 +187,9 @@ async function loadTypeShareData() {
     const raw = res.data.items || res.data
     const items = Array.isArray(raw) ? raw : []
     typeShareData.value = items
-    typeSharePie.value = items.map((r: any) => ({ name: r.machine_type, value: r.total_qty }))
+    typeSharePie.value = items.map((r: any) => ({ name: r.process_name, value: r.total_qty }))
     typeShareBar.value = {
-      categories: items.map((r: any) => r.machine_type),
+      categories: items.map((r: any) => r.process_name),
       series: [{ name: '생산량', data: items.map((r: any) => r.total_qty) }]
     }
   } catch (e) {
@@ -196,3 +201,22 @@ async function loadTypeShareData() {
   }
 }
 </script>
+
+<style scoped>
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.chart-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.chart-row > * {
+  flex: 1 1 400px;
+  min-width: 0;
+}
+</style>

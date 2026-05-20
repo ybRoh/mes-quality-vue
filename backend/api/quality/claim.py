@@ -4,9 +4,12 @@
 - D1~D8 단계별 수정
 """
 
+import logging
 from datetime import datetime
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 
 from api.deps import get_db, get_current_user
@@ -163,6 +166,7 @@ def create_claim(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(claim)
     return _build_claim_response(claim, db)
@@ -192,6 +196,7 @@ def update_claim_d3(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(claim)
     return _build_claim_response(claim, db)
@@ -218,6 +223,7 @@ def update_claim_d4(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(claim)
     return _build_claim_response(claim, db)
@@ -244,6 +250,7 @@ def update_claim_d5(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(claim)
     return _build_claim_response(claim, db)
@@ -270,6 +277,7 @@ def update_claim_d6(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(claim)
     return _build_claim_response(claim, db)
@@ -296,6 +304,7 @@ def update_claim_d7(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(claim)
     return _build_claim_response(claim, db)
@@ -322,6 +331,7 @@ def update_claim_d8(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(claim)
     return _build_claim_response(claim, db)

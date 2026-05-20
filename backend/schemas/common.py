@@ -39,9 +39,16 @@ class ApiResponse(BaseModel, Generic[T]):
 
 
 class TokenResponse(BaseModel):
-    """JWT 토큰 응답"""
+    """JWT 토큰 응답 (deprecated: httpOnly 쿠키로 전환)"""
     access_token: str
     token_type: str = "bearer"
+    user_id: str
+    user_name: str
+    role: str
+
+
+class LoginResponse(BaseModel):
+    """로그인 응답 (토큰은 httpOnly 쿠키로 전달)"""
     user_id: str
     user_name: str
     role: str

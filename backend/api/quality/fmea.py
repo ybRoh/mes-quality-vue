@@ -5,9 +5,12 @@ FMEA (고장모드 영향분석) API 라우터
 - RPN 분석
 """
 
+import logging
 from datetime import datetime, timezone
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -61,6 +64,7 @@ def list_fmeas(
     size: int = Query(settings.DEFAULT_PAGE_SIZE, ge=1, le=settings.MAX_PAGE_SIZE),
     status: Optional[str] = None,
     product_id: Optional[str] = None,
+    fmea_type: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: SysUser = Depends(get_current_user),
 ):
@@ -70,6 +74,8 @@ def list_fmeas(
         query = query.filter(QmsFmea.status == status)
     if product_id:
         query = query.filter(QmsFmea.product_id == product_id)
+    if fmea_type:
+        query = query.filter(QmsFmea.fmea_type == fmea_type)
 
     total = query.count()
     fmeas = query.order_by(QmsFmea.created_at.desc()).offset((page - 1) * size).limit(size).all()
@@ -138,6 +144,7 @@ def create_fmea(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(fmea)
 
@@ -181,6 +188,7 @@ def update_fmea(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(fmea)
 
@@ -206,6 +214,7 @@ def delete_fmea(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     return {"message": "FMEA가 삭제되었습니다"}
 
@@ -286,6 +295,7 @@ def create_fmea_item(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(item)
 
@@ -326,6 +336,7 @@ def update_fmea_item(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(item)
 

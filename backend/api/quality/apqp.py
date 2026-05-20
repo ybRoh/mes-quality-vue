@@ -5,9 +5,12 @@ APQP (사전품질계획) API 라우터
 - Gantt 차트 데이터
 """
 
+import logging
 from datetime import datetime, date, timezone
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -144,6 +147,7 @@ def create_apqp_project(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(project)
 
@@ -227,6 +231,7 @@ def update_apqp_project(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(project)
 
@@ -257,6 +262,7 @@ def delete_apqp_project(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     return {"message": "APQP 프로젝트가 삭제되었습니다"}
 
@@ -322,6 +328,7 @@ def update_phase(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(phase)
 
@@ -386,6 +393,7 @@ def create_deliverable(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(deliverable)
 
@@ -414,6 +422,7 @@ def update_deliverable(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(deliverable)
 

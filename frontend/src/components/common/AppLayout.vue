@@ -31,7 +31,7 @@
         <el-sub-menu index="analysis">
           <template #title>
             <el-icon><DataAnalysis /></el-icon>
-            <span>생산분석</span>
+            <span>생산공정품질분석</span>
           </template>
           <el-menu-item index="/analysis/period">
             <el-icon><Calendar /></el-icon>
@@ -88,6 +88,138 @@
           <el-menu-item index="/quality/inspection">
             <el-icon><Search /></el-icon>
             <span>검사이력</span>
+          </el-menu-item>
+        </el-sub-menu>
+
+        <!-- 표준문서관리 -->
+        <el-sub-menu index="document">
+          <template #title>
+            <el-icon><FolderOpened /></el-icon>
+            <span>표준문서관리</span>
+          </template>
+          <el-menu-item index="/quality/document?doc_type=MANUAL">
+            <el-icon><Reading /></el-icon>
+            <span>매뉴얼</span>
+          </el-menu-item>
+          <el-menu-item index="/quality/document?doc_type=PROCESS">
+            <el-icon><Connection /></el-icon>
+            <span>프로세스</span>
+          </el-menu-item>
+          <el-menu-item index="/quality/document?doc_type=REGULATION">
+            <el-icon><DocumentCopy /></el-icon>
+            <span>규정/지침</span>
+          </el-menu-item>
+          <el-menu-item index="/quality/document?doc_type=FORM">
+            <el-icon><Memo /></el-icon>
+            <span>양식관리</span>
+          </el-menu-item>
+        </el-sub-menu>
+
+        <!-- 규격관리 -->
+        <el-sub-menu index="specification">
+          <template #title>
+            <el-icon><Files /></el-icon>
+            <span>규격관리</span>
+          </template>
+          <el-menu-item index="/quality/specification">
+            <el-icon><Document /></el-icon>
+            <span>규격 목록</span>
+          </el-menu-item>
+          <el-menu-item index="/quality/si-faq">
+            <el-icon><ChatLineSquare /></el-icon>
+            <span>SI FAQ</span>
+          </el-menu-item>
+          <el-menu-item index="/quality/csr">
+            <el-icon><Tickets /></el-icon>
+            <span>고객 특별요구사항</span>
+          </el-menu-item>
+        </el-sub-menu>
+
+        <!-- 내부심사관리 -->
+        <el-sub-menu index="audit">
+          <template #title>
+            <el-icon><Checked /></el-icon>
+            <span>내부심사관리</span>
+          </template>
+          <el-menu-item index="/quality/audit-requirement">
+            <el-icon><Tickets /></el-icon>
+            <span>SQ 요구사항</span>
+          </el-menu-item>
+          <el-menu-item index="/quality/audit-plan">
+            <el-icon><Calendar /></el-icon>
+            <span>심사 일정/계획</span>
+          </el-menu-item>
+          <el-menu-item index="/quality/audit-finding">
+            <el-icon><CircleClose /></el-icon>
+            <span>부적합/관찰</span>
+          </el-menu-item>
+          <el-menu-item index="/quality/corrective-action">
+            <el-icon><Memo /></el-icon>
+            <span>시정조치 관리</span>
+          </el-menu-item>
+        </el-sub-menu>
+
+        <!-- 고객심사관리 -->
+        <el-sub-menu index="customer-audit">
+          <template #title>
+            <el-icon><UserFilled /></el-icon>
+            <span>고객심사관리</span>
+          </template>
+          <el-menu-item index="/quality/customer-audit">
+            <el-icon><Checked /></el-icon>
+            <span>고객심사 목록</span>
+          </el-menu-item>
+          <el-menu-item index="/quality/customer-audit-finding">
+            <el-icon><CircleClose /></el-icon>
+            <span>발견사항</span>
+          </el-menu-item>
+          <el-menu-item index="/quality/customer-audit-action">
+            <el-icon><EditPen /></el-icon>
+            <span>시정조치</span>
+          </el-menu-item>
+        </el-sub-menu>
+
+        <!-- 교육/자격관리 -->
+        <el-sub-menu index="training">
+          <template #title>
+            <el-icon><Coordinate /></el-icon>
+            <span>교육/자격관리</span>
+          </template>
+          <el-menu-item index="/quality/training">
+            <el-icon><Reading /></el-icon>
+            <span>교육관리</span>
+          </el-menu-item>
+          <el-menu-item index="/quality/qualification">
+            <el-icon><Medal /></el-icon>
+            <span>자격관리</span>
+          </el-menu-item>
+          <el-menu-item index="/quality/competency">
+            <el-icon><Histogram /></el-icon>
+            <span>역량평가</span>
+          </el-menu-item>
+        </el-sub-menu>
+
+        <!-- 성과지표관리 -->
+        <el-sub-menu index="kpi">
+          <template #title>
+            <el-icon><DataLine /></el-icon>
+            <span>성과지표관리</span>
+          </template>
+          <el-menu-item index="/quality/kpi-dashboard">
+            <el-icon><Odometer /></el-icon>
+            <span>KPI 대시보드</span>
+          </el-menu-item>
+          <el-menu-item index="/quality/kpi-definition">
+            <el-icon><Setting /></el-icon>
+            <span>KPI 정의</span>
+          </el-menu-item>
+          <el-menu-item index="/quality/process-monitor">
+            <el-icon><Monitor /></el-icon>
+            <span>공정 모니터링</span>
+          </el-menu-item>
+          <el-menu-item index="/quality/risk-issue">
+            <el-icon><Warning /></el-icon>
+            <span>리스크/이슈</span>
           </el-menu-item>
         </el-sub-menu>
       </el-menu>
@@ -153,7 +285,23 @@ import {
   User,
   SwitchButton,
   Fold,
-  Expand
+  Expand,
+  FolderOpened,
+  Reading,
+  Connection,
+  DocumentCopy,
+  Checked,
+  Tickets,
+  CircleClose,
+  Memo,
+  Medal,
+  Histogram,
+  Coordinate,
+  Files,
+  ChatLineSquare,
+  UserFilled,
+  EditPen,
+  DataLine
 } from '@element-plus/icons-vue'
 
 const authStore = useAuthStore()

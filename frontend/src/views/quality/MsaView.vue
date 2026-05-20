@@ -12,20 +12,20 @@
     <!-- Study List -->
     <div class="card" v-if="!selectedStudy">
       <el-table :data="studyList" border stripe v-loading="loading" @row-click="selectStudy">
-        <el-table-column prop="id" label="ID" width="60" align="center" />
-        <el-table-column prop="study_name" label="연구명" min-width="200" />
-        <el-table-column prop="gage_name" label="측정기기" width="130" />
-        <el-table-column prop="gage_no" label="기기번호" width="120" />
-        <el-table-column prop="operators" label="측정자 수" width="90" align="center" />
-        <el-table-column prop="parts" label="부품 수" width="90" align="center" />
-        <el-table-column prop="trials" label="반복 횟수" width="90" align="center" />
-        <el-table-column prop="grr_pct" label="GR&R(%)" width="100" align="center">
+        <el-table-column prop="msa_no" label="MSA 번호" width="180" />
+        <el-table-column prop="product_name" label="제품" width="130" />
+        <el-table-column prop="gage_name" label="측정기기" width="150" />
+        <el-table-column prop="gage_id" label="기기번호" width="120" />
+        <el-table-column prop="num_operators" label="측정자 수" width="90" align="center" />
+        <el-table-column prop="num_parts" label="부품 수" width="90" align="center" />
+        <el-table-column prop="num_trials" label="반복 횟수" width="90" align="center" />
+        <el-table-column prop="result_grr_pct" label="GR&R(%)" width="100" align="center">
           <template #default="{ row }">
-            <el-tag v-if="row.grr_pct !== null && row.grr_pct !== undefined"
-              :type="row.grr_pct <= 10 ? 'success' : row.grr_pct <= 30 ? 'warning' : 'danger'"
+            <el-tag v-if="row.result_grr_pct !== null && row.result_grr_pct !== undefined"
+              :type="row.result_grr_pct <= 10 ? 'success' : row.result_grr_pct <= 30 ? 'warning' : 'danger'"
               effect="dark"
             >
-              {{ row.grr_pct?.toFixed(1) }}%
+              {{ row.result_grr_pct?.toFixed(1) }}%
             </el-tag>
             <span v-else>-</span>
           </template>
@@ -36,7 +36,6 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" label="생성일" width="120" align="center" />
       </el-table>
     </div>
 
@@ -49,8 +48,8 @@
               <el-icon><Back /></el-icon>
               목록으로
             </el-button>
-            <h3 style="margin: 8px 0 0 0;">{{ selectedStudy.study_name }}</h3>
-            <p style="margin: 4px 0; color: #6A6D70;">측정기기: {{ selectedStudy.gage_name }} ({{ selectedStudy.gage_no }})</p>
+            <h3 style="margin: 8px 0 0 0;">{{ selectedStudy.msa_no }}</h3>
+            <p style="margin: 4px 0; color: #6A6D70;">측정기기: {{ selectedStudy.gage_name }} ({{ selectedStudy.gage_id }})</p>
           </div>
           <el-button type="primary" @click="calculateGrr" :loading="calculating">
             <el-icon><DataAnalysis /></el-icon>
@@ -63,18 +62,17 @@
       <div class="card">
         <div class="card-title">측정 데이터 입력</div>
         <el-table :data="measurementGrid" border stripe size="small" max-height="400">
-          <el-table-column prop="operator" label="측정자" width="100" fixed="left" />
-          <el-table-column prop="part" label="부품" width="80" fixed="left" align="center" />
-          <el-table-column prop="trial" label="반복" width="80" fixed="left" align="center" />
+          <el-table-column prop="operator_name" label="측정자" width="100" fixed="left" />
+          <el-table-column prop="part_no" label="부품" width="80" fixed="left" align="center" />
+          <el-table-column prop="trial_no" label="반복" width="80" fixed="left" align="center" />
           <el-table-column label="측정값" min-width="150">
-            <template #default="{ row, $index }">
+            <template #default="{ row }">
               <el-input-number
-                v-model="row.value"
+                v-model="row.measured_value"
                 :precision="4"
                 :controls="false"
                 size="small"
                 style="width: 120px;"
-                @change="updateMeasurement($index, row.value)"
               />
             </template>
           </el-table-column>
@@ -86,11 +84,11 @@
         <div class="card-title">GR&amp;R 분석 결과</div>
 
         <el-descriptions :column="3" border style="margin-bottom: 16px;">
-          <el-descriptions-item label="EV (반복성)">{{ grrResults.EV?.toFixed(4) }}</el-descriptions-item>
-          <el-descriptions-item label="AV (재현성)">{{ grrResults.AV?.toFixed(4) }}</el-descriptions-item>
-          <el-descriptions-item label="GR&R">{{ grrResults.GRR?.toFixed(4) }}</el-descriptions-item>
-          <el-descriptions-item label="PV (부품변동)">{{ grrResults.PV?.toFixed(4) }}</el-descriptions-item>
-          <el-descriptions-item label="TV (총변동)">{{ grrResults.TV?.toFixed(4) }}</el-descriptions-item>
+          <el-descriptions-item label="EV (반복성)">{{ grrResults.ev?.toFixed(4) }}</el-descriptions-item>
+          <el-descriptions-item label="AV (재현성)">{{ grrResults.av?.toFixed(4) }}</el-descriptions-item>
+          <el-descriptions-item label="GR&R">{{ grrResults.grr?.toFixed(4) }}</el-descriptions-item>
+          <el-descriptions-item label="PV (부품변동)">{{ grrResults.pv?.toFixed(4) }}</el-descriptions-item>
+          <el-descriptions-item label="TV (총변동)">{{ grrResults.tv?.toFixed(4) }}</el-descriptions-item>
           <el-descriptions-item label="GR&R %">
             <el-tag :type="grrResults.grr_pct <= 10 ? 'success' : grrResults.grr_pct <= 30 ? 'warning' : 'danger'" effect="dark" size="large">
               {{ grrResults.grr_pct?.toFixed(1) }}%
@@ -108,7 +106,7 @@
 
         <!-- GR&R Chart -->
         <GrrChart
-          :components="{ EV: grrResults.EV, AV: grrResults.AV, PV: grrResults.PV, GRR: grrResults.GRR }"
+          :components="{ EV: grrResults.ev, AV: grrResults.av, PV: grrResults.pv, GRR: grrResults.grr }"
           title="변동 기여율 분석"
         />
       </div>
@@ -117,41 +115,52 @@
     <!-- Create Study Dialog -->
     <el-dialog v-model="showCreateDialog" title="새 MSA 연구" width="600px">
       <el-form :model="studyForm" label-position="top">
-        <el-form-item label="연구명" required>
-          <el-input v-model="studyForm.study_name" placeholder="MSA 연구명" />
+        <el-form-item label="MSA 번호" required>
+          <el-input v-model="studyForm.msa_no" placeholder="MSA-INJ001-DIM-A" />
         </el-form-item>
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="측정기기명" required>
-              <el-input v-model="studyForm.gage_name" placeholder="예: 마이크로미터" />
+            <el-form-item label="제품" required>
+              <el-select v-model="studyForm.product_id" filterable placeholder="제품 선택" style="width: 100%;">
+                <el-option v-for="p in productOptions" :key="p.product_id" :label="p.product_name" :value="p.product_id" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
+            <el-form-item label="측정기기명">
+              <el-input v-model="studyForm.gage_name" placeholder="예: 마이크로미터" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
             <el-form-item label="기기번호">
-              <el-input v-model="studyForm.gage_no" placeholder="예: GM-001" />
+              <el-input v-model="studyForm.gage_id" placeholder="예: M-001" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="공차 (Tolerance)">
+              <el-input-number v-model="studyForm.tolerance" :precision="4" :step="0.01" style="width: 100%;" />
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="16">
           <el-col :span="8">
             <el-form-item label="측정자 수">
-              <el-input-number v-model="studyForm.operators" :min="2" :max="5" style="width: 100%;" />
+              <el-input-number v-model="studyForm.num_operators" :min="2" :max="5" style="width: 100%;" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="부품 수">
-              <el-input-number v-model="studyForm.parts" :min="5" :max="20" style="width: 100%;" />
+              <el-input-number v-model="studyForm.num_parts" :min="5" :max="20" style="width: 100%;" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="반복 횟수">
-              <el-input-number v-model="studyForm.trials" :min="2" :max="5" style="width: 100%;" />
+              <el-input-number v-model="studyForm.num_trials" :min="2" :max="5" style="width: 100%;" />
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="공차 (Tolerance)">
-          <el-input-number v-model="studyForm.tolerance" :precision="4" :step="0.01" style="width: 100%;" />
-        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showCreateDialog = false">취소</el-button>
@@ -168,6 +177,7 @@ import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/common/PageHeader.vue'
 import GrrChart from '@/components/charts/GrrChart.vue'
 import { msaApi } from '@/api/quality'
+import client from '@/api/client'
 
 const loading = ref(false)
 const calculating = ref(false)
@@ -175,16 +185,18 @@ const showCreateDialog = ref(false)
 
 const studyList = ref<any[]>([])
 const selectedStudy = ref<any>(null)
-const measurementGrid = ref<{ operator: string; part: number; trial: number; value: number | null }[]>([])
+const measurementGrid = ref<{ operator_name: string; part_no: number; trial_no: number; measured_value: number | null }[]>([])
 const grrResults = ref<any>(null)
+const productOptions = ref<any[]>([])
 
 const studyForm = ref({
-  study_name: '',
+  msa_no: '',
+  product_id: '',
   gage_name: '',
-  gage_no: '',
-  operators: 3,
-  parts: 10,
-  trials: 3,
+  gage_id: '',
+  num_operators: 3,
+  num_parts: 10,
+  num_trials: 3,
   tolerance: 0.2
 })
 
@@ -215,8 +227,14 @@ function getJudgmentDescription(judgment: string): string {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadStudyList()
+  try {
+    const res = await client.get('/master/products')
+    productOptions.value = res.data.items || res.data
+  } catch {
+    productOptions.value = []
+  }
 })
 
 async function loadStudyList() {
@@ -233,24 +251,44 @@ async function loadStudyList() {
   }
 }
 
-function selectStudy(row: any) {
+async function selectStudy(row: any) {
   selectedStudy.value = row
   grrResults.value = null
-  generateMeasurementGrid(row.operators || 3, row.parts || 10, row.trials || 3)
-  loadMeasurements(row.id)
+  measurementGrid.value = []
+
+  try {
+    const res = await msaApi.getMeasurements(row.msa_id)
+    const data = res.data as any[]
+
+    if (data.length > 0) {
+      // Use actual measurement data
+      measurementGrid.value = data.map((m: any) => ({
+        operator_name: m.operator_name,
+        part_no: m.part_no,
+        trial_no: m.trial_no,
+        measured_value: m.measured_value
+      }))
+    } else {
+      // Generate empty grid for new studies
+      generateEmptyGrid(row.num_operators || 3, row.num_parts || 10, row.num_trials || 3)
+    }
+  } catch (e) {
+    console.warn('측정 데이터 조회 실패:', e)
+    generateEmptyGrid(row.num_operators || 3, row.num_parts || 10, row.num_trials || 3)
+  }
 }
 
-function generateMeasurementGrid(operators: number, parts: number, trials: number) {
+function generateEmptyGrid(operators: number, parts: number, trials: number) {
   const grid: any[] = []
   const operatorNames = ['작업자A', '작업자B', '작업자C', '작업자D', '작업자E']
   for (let op = 0; op < operators; op++) {
     for (let part = 1; part <= parts; part++) {
       for (let trial = 1; trial <= trials; trial++) {
         grid.push({
-          operator: operatorNames[op],
-          part,
-          trial,
-          value: null
+          operator_name: operatorNames[op],
+          part_no: part,
+          trial_no: trial,
+          measured_value: null
         })
       }
     }
@@ -258,33 +296,24 @@ function generateMeasurementGrid(operators: number, parts: number, trials: numbe
   measurementGrid.value = grid
 }
 
-async function loadMeasurements(studyId: number) {
-  try {
-    const res = await msaApi.getMeasurements(studyId)
-    const data = res.data
-    data.forEach((m: any) => {
-      const idx = measurementGrid.value.findIndex(
-        g => g.operator === m.operator && g.part === m.part && g.trial === m.trial
-      )
-      if (idx >= 0) measurementGrid.value[idx].value = m.value
-    })
-  } catch (e) {
-    console.warn('측정 데이터 조회 실패:', e)
-    ElMessage.error('측정 데이터를 불러오는데 실패했습니다')
-  }
-}
-
-function updateMeasurement(_index: number, _value: number | null) {
-  // Local update only; saves on calculate
-}
-
 async function calculateGrr() {
   if (!selectedStudy.value) return
   calculating.value = true
 
   try {
-    await msaApi.saveMeasurements(selectedStudy.value.id, measurementGrid.value.filter(m => m.value !== null))
-    const res = await msaApi.calculate(selectedStudy.value.id)
+    // Save measurements first
+    const filledMeasurements = measurementGrid.value
+      .filter(m => m.measured_value !== null)
+      .map(m => ({
+        operator_name: m.operator_name,
+        part_no: m.part_no,
+        trial_no: m.trial_no,
+        measured_value: m.measured_value!
+      }))
+    await msaApi.saveMeasurements(selectedStudy.value.msa_id, filledMeasurements)
+
+    // Calculate GR&R
+    const res = await msaApi.calculate(selectedStudy.value.msa_id)
     grrResults.value = res.data
   } catch (e) {
     console.warn('GR&R 계산 실패:', e)
@@ -296,15 +325,15 @@ async function calculateGrr() {
 }
 
 async function createStudy() {
-  if (!studyForm.value.study_name || !studyForm.value.gage_name) {
-    ElMessage.warning('필수항목을 입력하세요.')
+  if (!studyForm.value.msa_no || !studyForm.value.product_id) {
+    ElMessage.warning('MSA 번호와 제품을 입력하세요.')
     return
   }
   try {
     await msaApi.create(studyForm.value)
     ElMessage.success('MSA 연구가 생성되었습니다.')
     showCreateDialog.value = false
-    studyForm.value = { study_name: '', gage_name: '', gage_no: '', operators: 3, parts: 10, trials: 3, tolerance: 0.2 }
+    studyForm.value = { msa_no: '', product_id: '', gage_name: '', gage_id: '', num_operators: 3, num_parts: 10, num_trials: 3, tolerance: 0.2 }
     loadStudyList()
   } catch {
     ElMessage.error('생성에 실패했습니다.')

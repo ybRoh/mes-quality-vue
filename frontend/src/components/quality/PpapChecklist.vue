@@ -60,10 +60,7 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { CircleCheckFilled, Loading, RemoveFilled, CircleCloseFilled } from '@element-plus/icons-vue'
-
+<script lang="ts">
 interface PpapElement {
   element_no: number
   element_name: string
@@ -71,6 +68,42 @@ interface PpapElement {
   status: string
   document_ref: string
 }
+
+const DEFAULT_ELEMENT_NAMES = [
+  '설계기록 (Design Records)',
+  '기술변경 문서 (Engineering Change Documents)',
+  '고객 기술승인 (Customer Engineering Approval)',
+  '설계 FMEA (Design FMEA)',
+  '공정 흐름도 (Process Flow Diagram)',
+  '공정 FMEA (Process FMEA)',
+  '관리계획서 (Control Plan)',
+  'MSA (Measurement System Analysis)',
+  '치수검사 결과 (Dimensional Results)',
+  '재료/성능 시험 결과 (Material/Performance Test Results)',
+  '초기 공정능력 조사 (Initial Process Studies)',
+  '공인시험소 문서 (Qualified Laboratory Documentation)',
+  '외관승인 보고서 (AAR - Appearance Approval Report)',
+  '양산시료 (Sample Production Parts)',
+  '마스터 시료 (Master Sample)',
+  '검사구 (Checking Aids)',
+  '고객 고유 요구사항 (Customer-Specific Requirements)',
+  'PSW (Part Submission Warrant)'
+]
+
+function getDefaultElements(): PpapElement[] {
+  return DEFAULT_ELEMENT_NAMES.map((name, i) => ({
+    element_no: i + 1,
+    element_name: name,
+    is_required: true,
+    status: 'NOT_STARTED',
+    document_ref: ''
+  }))
+}
+</script>
+
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue'
+import { CircleCheckFilled, Loading, RemoveFilled, CircleCloseFilled } from '@element-plus/icons-vue'
 
 interface Props {
   elements?: PpapElement[]
@@ -144,35 +177,7 @@ function handleStatusChange(element: PpapElement) {
   emit('update:elements', localElements.value.map(e => ({ ...e })))
 }
 
-function getDefaultElements(): PpapElement[] {
-  const names = [
-    '설계기록 (Design Records)',
-    '기술변경 문서 (Engineering Change Documents)',
-    '고객 기술승인 (Customer Engineering Approval)',
-    '설계 FMEA (Design FMEA)',
-    '공정 흐름도 (Process Flow Diagram)',
-    '공정 FMEA (Process FMEA)',
-    '관리계획서 (Control Plan)',
-    'MSA (Measurement System Analysis)',
-    '치수검사 결과 (Dimensional Results)',
-    '재료/성능 시험 결과 (Material/Performance Test Results)',
-    '초기 공정능력 조사 (Initial Process Studies)',
-    '공인시험소 문서 (Qualified Laboratory Documentation)',
-    '외관승인 보고서 (AAR - Appearance Approval Report)',
-    '양산시료 (Sample Production Parts)',
-    '마스터 시료 (Master Sample)',
-    '검사구 (Checking Aids)',
-    '고객 고유 요구사항 (Customer-Specific Requirements)',
-    'PSW (Part Submission Warrant)'
-  ]
-  return names.map((name, i) => ({
-    element_no: i + 1,
-    element_name: name,
-    is_required: true,
-    status: 'NOT_STARTED',
-    document_ref: ''
-  }))
-}
+
 </script>
 
 <style scoped>

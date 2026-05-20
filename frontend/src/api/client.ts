@@ -1,27 +1,14 @@
 import axios from 'axios'
-import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
+import type { AxiosInstance, AxiosResponse } from 'axios'
 
 const client: AxiosInstance = axios.create({
   baseURL: '/api',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json'
-  }
-})
-
-// Request interceptor: attach JWT token
-client.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('token')
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
   },
-  (error) => {
-    return Promise.reject(error)
-  }
-)
+  withCredentials: true
+})
 
 // Response interceptor: handle 401
 client.interceptors.response.use(
@@ -30,7 +17,6 @@ client.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
       localStorage.removeItem('userId')
       localStorage.removeItem('userName')
       localStorage.removeItem('role')

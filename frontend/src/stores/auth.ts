@@ -4,24 +4,21 @@ import { authApi } from '@/api/auth'
 import router from '@/router'
 
 export const useAuthStore = defineStore('auth', () => {
-  const token = ref<string>(localStorage.getItem('token') || '')
   const userId = ref<string>(localStorage.getItem('userId') || '')
   const userName = ref<string>(localStorage.getItem('userName') || '')
   const role = ref<string>(localStorage.getItem('role') || '')
 
-  const isLoggedIn = computed(() => !!token.value)
+  const isLoggedIn = computed(() => !!userId.value)
 
   async function login(loginUserId: string, password: string) {
     try {
       const response = await authApi.login(loginUserId, password)
       const data = response.data
 
-      token.value = data.access_token
       userId.value = data.user_id || loginUserId
       userName.value = data.user_name || loginUserId
       role.value = data.role || 'USER'
 
-      localStorage.setItem('token', token.value)
       localStorage.setItem('userId', userId.value)
       localStorage.setItem('userName', userName.value)
       localStorage.setItem('role', role.value)
@@ -33,13 +30,17 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  function logout() {
-    token.value = ''
+  async function logout() {
+    try {
+      await authApi.logout()
+    } catch {
+      // 쿠키 만료 등으로 실패해도 클라이언트 정리 진행
+    }
+
     userId.value = ''
     userName.value = ''
     role.value = ''
 
-    localStorage.removeItem('token')
     localStorage.removeItem('userId')
     localStorage.removeItem('userName')
     localStorage.removeItem('role')
@@ -47,13 +48,34 @@ export const useAuthStore = defineStore('auth', () => {
     router.push('/login')
   }
 
+  async function checkSession(): Promise<boolean> {
+    try {
+      const res = await authApi.getMe()
+      userId.value = res.data.user_id
+      userName.value = res.data.user_name
+      role.value = res.data.role || 'USER'
+      localStorage.setItem('userId', userId.value)
+      localStorage.setItem('userName', userName.value)
+      localStorage.setItem('role', role.value)
+      return true
+    } catch {
+      userId.value = ''
+      userName.value = ''
+      role.value = ''
+      localStorage.removeItem('userId')
+      localStorage.removeItem('userName')
+      localStorage.removeItem('role')
+      return false
+    }
+  }
+
   return {
-    token,
     userId,
     userName,
     role,
     isLoggedIn,
     login,
-    logout
+    logout,
+    checkSession
   }
 })

@@ -5,6 +5,10 @@ export const authApi = {
     return client.post('/auth/login', { user_id: userId, password })
   },
 
+  logout() {
+    return client.post('/auth/logout')
+  },
+
   getMe() {
     return client.get('/auth/me')
   }

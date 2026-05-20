@@ -1,24 +1,31 @@
 """
 인증 API 라우터
-- POST /api/auth/login: 로그인 (bcrypt 검증 + JWT 발급)
+- POST /api/auth/login: 로그인 (bcrypt 검증 + JWT httpOnly 쿠키 발급)
+- POST /api/auth/logout: 로그아웃 (쿠키 제거)
 - GET /api/auth/me: 현재 사용자 정보
 """
 
+import os
 import bcrypt
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from api.deps import get_db, get_current_user
+from config import settings
 from core.security import create_access_token
 from models.existing import SysUser
-from schemas.common import LoginRequest, TokenResponse, ApiResponse
+from schemas.common import LoginRequest, LoginResponse
 
 router = APIRouter(prefix="/api/auth", tags=["인증"])
 
+# 쿠키 공통 설정
+_COOKIE_KEY = "access_token"
+_COOKIE_PATH = "/api"
 
-@router.post("/login", response_model=TokenResponse)
-def login(request: LoginRequest, db: Session = Depends(get_db)):
-    """로그인: bcrypt 비밀번호 검증 후 JWT 토큰 발급"""
+
+@router.post("/login", response_model=LoginResponse)
+def login(request: LoginRequest, response: Response, db: Session = Depends(get_db)):
+    """로그인: bcrypt 비밀번호 검증 후 JWT httpOnly 쿠키 발급"""
     # 사용자 조회
     user = db.query(SysUser).filter(
         SysUser.user_id == request.user_id,
@@ -45,15 +52,30 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
             detail="ID 또는 비밀번호가 올바르지 않습니다",
         )
 
-    # JWT 토큰 생성
+    # JWT 토큰 생성 → httpOnly 쿠키에 저장
     access_token = create_access_token(data={"sub": user.user_id})
+    response.set_cookie(
+        key=_COOKIE_KEY,
+        value=access_token,
+        httponly=True,
+        secure=os.getenv("ENVIRONMENT", "development") == "production",
+        samesite="lax",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        path=_COOKIE_PATH,
+    )
 
-    return TokenResponse(
-        access_token=access_token,
+    return LoginResponse(
         user_id=user.user_id,
         user_name=user.user_name,
         role=user.role,
     )
+
+
+@router.post("/logout")
+def logout(response: Response):
+    """로그아웃: httpOnly 쿠키 제거"""
+    response.delete_cookie(key=_COOKIE_KEY, path=_COOKIE_PATH)
+    return {"message": "로그아웃 되었습니다"}
 
 
 @router.get("/me")

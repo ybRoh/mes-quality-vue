@@ -6,16 +6,12 @@
       <!-- Tab 1: 일/월/년 실적 -->
       <el-tab-pane label="일/월/년 실적" name="daily">
         <div class="filter-bar">
-          <el-radio-group v-model="periodType" size="small" @change="loadDailyData">
+          <el-radio-group v-model="periodType" size="small">
             <el-radio-button value="daily">일별</el-radio-button>
             <el-radio-button value="monthly">월별</el-radio-button>
             <el-radio-button value="yearly">년별</el-radio-button>
           </el-radio-group>
-          <DateRangePicker v-model="dateRange" @update:model-value="loadDailyData" />
-          <el-button type="primary" size="small" @click="loadDailyData">
-            <el-icon><Search /></el-icon>
-            조회
-          </el-button>
+          <DateRangePicker v-model="dateRange" />
         </div>
 
         <div class="kpi-row">
@@ -37,20 +33,10 @@
         />
       </el-tab-pane>
 
-      <!-- Tab 2: 설비/규격별 실적 -->
-      <el-tab-pane label="설비/규격별 실적" name="machineSpec">
+      <!-- Tab 2: 설비별 실적 -->
+      <el-tab-pane label="설비별 실적" name="machineSpec">
         <div class="filter-bar">
           <DateRangePicker v-model="msDateRange" />
-          <el-select v-model="selectedMachine" placeholder="설비 선택" clearable size="default">
-            <el-option v-for="m in machineOptions" :key="m" :label="m" :value="m" />
-          </el-select>
-          <el-select v-model="selectedSpec" placeholder="규격 선택" clearable size="default">
-            <el-option v-for="s in specOptions" :key="s" :label="s" :value="s" />
-          </el-select>
-          <el-button type="primary" size="small" @click="loadMachineSpecData">
-            <el-icon><Search /></el-icon>
-            조회
-          </el-button>
         </div>
 
         <div class="card">
@@ -58,7 +44,7 @@
         </div>
 
         <BarChart
-          title="설비/규격별 생산 비교"
+          title="설비별 생산 비교"
           :x-data="msChart.categories"
           :series="msChart.series"
           y-axis-name="수량 (EA)"
@@ -70,10 +56,6 @@
       <el-tab-pane label="월별 추이" name="trend">
         <div class="filter-bar">
           <DateRangePicker v-model="trendDateRange" />
-          <el-button type="primary" size="small" @click="loadTrendData">
-            <el-icon><Search /></el-icon>
-            조회
-          </el-button>
         </div>
 
         <LineChart
@@ -88,8 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { Search } from '@element-plus/icons-vue'
+import { ref, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/common/PageHeader.vue'
 import DateRangePicker from '@/components/common/DateRangePicker.vue'
@@ -117,13 +98,12 @@ const machineChart = ref<{ categories: string[]; series: { name: string; data: n
 })
 
 const dailyColumns: TableColumn[] = [
-  { prop: 'date', label: '날짜', width: 120, sortable: true },
-  { prop: 'machine_no', label: '설비', width: 100 },
-  { prop: 'product_spec', label: '규격', width: 130 },
+  { prop: 'product_name', label: '제품명', width: 130 },
+  { prop: 'machine_name', label: '설비', width: 120 },
   { prop: 'total_qty', label: '총 생산', width: 100, sortable: true, align: 'right' },
   { prop: 'good_qty', label: '양품', width: 100, align: 'right' },
-  { prop: 'defect_qty', label: '불량', width: 100, align: 'right' },
-  { prop: 'defect_rate', label: '불량률(%)', width: 100, align: 'right', formatter: (v: number) => v?.toFixed(2) || '0.00' }
+  { prop: 'ng_qty', label: '불량', width: 100, align: 'right' },
+  { prop: 'ng_rate', label: '불량률(%)', width: 100, align: 'right', formatter: (v: number) => v?.toFixed(2) || '0.00' }
 ]
 
 // Tab 2 state
@@ -131,10 +111,6 @@ const msDateRange = ref<[string, string]>([
   dayjs().subtract(30, 'day').format('YYYY-MM-DD'),
   dayjs().format('YYYY-MM-DD')
 ])
-const selectedMachine = ref('')
-const selectedSpec = ref('')
-const machineOptions = ref<string[]>(['MC-01', 'MC-02', 'MC-03', 'MC-04', 'MC-05'])
-const specOptions = ref<string[]>(['PN-A1020', 'PN-B2030', 'PN-C3040'])
 const machineSpecData = ref<any[]>([])
 const msChart = ref<{ categories: string[]; series: { name: string; data: number[] }[] }>({
   categories: [],
@@ -142,13 +118,12 @@ const msChart = ref<{ categories: string[]; series: { name: string; data: number
 })
 
 const machineSpecColumns: TableColumn[] = [
-  { prop: 'machine_no', label: '설비', width: 100 },
-  { prop: 'product_spec', label: '규격', width: 130 },
+  { prop: 'machine_name', label: '설비', width: 120 },
+  { prop: 'process_type', label: '공정유형', width: 100 },
   { prop: 'total_qty', label: '총 생산', width: 100, sortable: true, align: 'right' },
   { prop: 'good_qty', label: '양품', width: 100, align: 'right' },
-  { prop: 'defect_qty', label: '불량', width: 100, align: 'right' },
-  { prop: 'defect_rate', label: '불량률(%)', width: 100, align: 'right', formatter: (v: number) => v?.toFixed(2) || '0.00' },
-  { prop: 'avg_cycle_time', label: '평균 C/T(초)', width: 120, align: 'right', formatter: (v: number) => v?.toFixed(1) || '-' }
+  { prop: 'ng_qty', label: '불량', width: 100, align: 'right' },
+  { prop: 'ng_rate', label: '불량률(%)', width: 100, align: 'right', formatter: (v: number) => v?.toFixed(2) || '0.00' }
 ]
 
 // Tab 3 state
@@ -160,6 +135,19 @@ const trendChart = ref<{ months: string[]; series: { name: string; data: number[
   months: [],
   series: []
 })
+
+// 탭 전환 시 자동 로드
+watch(activeTab, (tab) => {
+  if (tab === 'daily') loadDailyData()
+  else if (tab === 'machineSpec') loadMachineSpecData()
+  else if (tab === 'trend') loadTrendData()
+})
+
+// 날짜 변경 시 자동 로드
+watch(dateRange, () => { if (activeTab.value === 'daily') loadDailyData() }, { deep: true })
+watch(periodType, () => { if (activeTab.value === 'daily') loadDailyData() })
+watch(msDateRange, () => { if (activeTab.value === 'machineSpec') loadMachineSpecData() }, { deep: true })
+watch(trendDateRange, () => { if (activeTab.value === 'trend') loadTrendData() }, { deep: true })
 
 onMounted(() => {
   loadDailyData()
@@ -184,18 +172,17 @@ async function loadDailyData() {
 
     const total = data.reduce((s: number, r: any) => s + (r.total_qty || 0), 0)
     const good = data.reduce((s: number, r: any) => s + (r.good_qty || 0), 0)
-    const defect = data.reduce((s: number, r: any) => s + (r.defect_qty || 0), 0)
+    const ng = data.reduce((s: number, r: any) => s + (r.ng_qty || 0), 0)
     dailyKpi.value = {
       total,
       good,
-      defect,
-      defectRate: total > 0 ? Math.round((defect / total) * 10000) / 100 : 0
+      defect: ng,
+      defectRate: total > 0 ? Math.round((ng / total) * 10000) / 100 : 0
     }
 
-    // Machine chart grouping
     const machineMap: Record<string, number> = {}
     data.forEach((r: any) => {
-      const key = r.machine_no || '기타'
+      const key = r.machine_name || r.machine_id || '기타'
       machineMap[key] = (machineMap[key] || 0) + (r.total_qty || 0)
     })
     machineChart.value = {
@@ -215,22 +202,21 @@ async function loadMachineSpecData() {
   try {
     const res = await analysisApi.getByEquipment({
       from: msDateRange.value[0],
-      to: msDateRange.value[1],
-      machine_id: selectedMachine.value || undefined
+      to: msDateRange.value[1]
     })
     const rawMs = res.data.items || res.data
     const data = Array.isArray(rawMs) ? rawMs : []
     machineSpecData.value = data
     msChart.value = {
-      categories: data.map((r: any) => `${r.machine_no}-${r.product_spec}`),
+      categories: data.map((r: any) => r.machine_name || r.machine_id),
       series: [
         { name: '양품', data: data.map((r: any) => r.good_qty) },
-        { name: '불량', data: data.map((r: any) => r.defect_qty) }
+        { name: '불량', data: data.map((r: any) => r.ng_qty) }
       ]
     }
   } catch (e) {
-    console.warn('설비/규격별 실적 조회 실패:', e)
-    ElMessage.error('설비/규격별 실적을 불러오는데 실패했습니다')
+    console.warn('설비별 실적 조회 실패:', e)
+    ElMessage.error('설비별 실적을 불러오는데 실패했습니다')
     machineSpecData.value = []
     msChart.value = { categories: [], series: [] }
   }
@@ -242,12 +228,13 @@ async function loadTrendData() {
       from: trendDateRange.value[0],
       to: trendDateRange.value[1]
     })
-    const data = res.data
+    const raw = res.data.items || res.data
+    const items = Array.isArray(raw) ? raw : []
     trendChart.value = {
-      months: data.months,
+      months: items.map((r: any) => r.year_month),
       series: [
-        { name: '양품', data: data.good },
-        { name: '불량', data: data.defect }
+        { name: '양품', data: items.map((r: any) => r.good_qty || 0) },
+        { name: '불량', data: items.map((r: any) => r.ng_qty || 0) }
       ]
     }
   } catch (e) {
@@ -257,3 +244,18 @@ async function loadTrendData() {
   }
 }
 </script>
+
+<style scoped>
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.kpi-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+</style>

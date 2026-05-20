@@ -5,7 +5,6 @@ QMS 애플리케이션 설정
 """
 
 import secrets
-import warnings
 from pydantic_settings import BaseSettings
 
 # 고정된 기본 시크릿 사용을 방지하기 위해 매 실행마다 랜덤 키 생성
@@ -40,11 +39,9 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-# SECRET_KEY가 환경변수로 설정되지 않은 경우 경고
+# SECRET_KEY 미설정 시 서버 시작 차단
 if settings.SECRET_KEY == _DEFAULT_SECRET_KEY:
-    warnings.warn(
-        "SECRET_KEY가 설정되지 않아 임시 랜덤 키를 사용합니다. "
-        "서버 재시작 시 기존 토큰이 무효화됩니다. "
-        ".env 파일에 SECRET_KEY를 설정하세요.",
-        stacklevel=1,
+    raise RuntimeError(
+        "SECRET_KEY가 설정되지 않았습니다. .env 파일에 SECRET_KEY를 설정하세요.\n"
+        "생성 예시: python3 -c \"import secrets; print(secrets.token_hex(32))\""
     )

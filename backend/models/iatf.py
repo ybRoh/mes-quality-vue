@@ -2,15 +2,20 @@
 IATF 16949 QMS 신규 테이블 정의
 - QmsBase 사용 (create_all 안전)
 - FMEA, Control Plan, MSA, PPAP, APQP 모듈
+- 표준문서관리, 내부심사관리, 교육/자격관리 모듈
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import (
     Column, Integer, String, Text, Float, Date, DateTime,
-    ForeignKey, UniqueConstraint,
+    ForeignKey, UniqueConstraint, Boolean,
 )
 from sqlalchemy.orm import relationship
 from models.base import QmsBase
+
+
+def _utcnow():
+    return datetime.now(timezone.utc)
 
 
 # ============================================================
@@ -29,8 +34,8 @@ class QmsFmea(QmsBase):
     status = Column(String(20), default="DRAFT")             # DRAFT/IN_REVIEW/APPROVED/CLOSED
     prepared_by = Column(String(50))
     approved_by = Column(String(50))
-    created_at = Column(DateTime, default=datetime.now)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
     items = relationship("QmsFmeaItem", back_populates="fmea", cascade="all, delete-orphan", passive_deletes=True)
 
@@ -88,8 +93,8 @@ class QmsControlPlan(QmsBase):
     status = Column(String(20), default="DRAFT")
     prepared_by = Column(String(50))
     approved_by = Column(String(50))
-    created_at = Column(DateTime, default=datetime.now)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
     items = relationship("QmsControlPlanItem", back_populates="control_plan", cascade="all, delete-orphan", passive_deletes=True)
 
@@ -143,8 +148,8 @@ class QmsMsaStudy(QmsBase):
     result_grr_pct = Column(Float)                            # %GR&R 결과
     result_ndc = Column(Integer)                              # ndc 결과
     judgment = Column(String(20))                             # ACCEPTABLE/MARGINAL/UNACCEPTABLE
-    created_at = Column(DateTime, default=datetime.now)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
     measurements = relationship("QmsMsaMeasurement", back_populates="msa_study", cascade="all, delete-orphan", passive_deletes=True)
 
@@ -192,8 +197,8 @@ class QmsPpap(QmsBase):
     cp_id = Column(Integer)                                   # Control Plan 연계
     msa_id = Column(Integer)                                  # MSA 연계
     apqp_id = Column(Integer)                                 # APQP 연계
-    created_at = Column(DateTime, default=datetime.now)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
     elements = relationship("QmsPpapElement", back_populates="ppap", cascade="all, delete-orphan", passive_deletes=True)
 
@@ -236,8 +241,8 @@ class QmsApqpProject(QmsBase):
     sop_date = Column(Date)                                   # 양산 시작일
     team_leader = Column(String(50))
     status = Column(String(20), default="NOT_STARTED")        # NOT_STARTED/IN_PROGRESS/COMPLETED/ON_HOLD
-    created_at = Column(DateTime, default=datetime.now)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
     phases = relationship("QmsApqpPhase", back_populates="project", cascade="all, delete-orphan", passive_deletes=True)
 
@@ -283,3 +288,548 @@ class QmsApqpDeliverable(QmsBase):
 
     def __repr__(self):
         return f"<QmsApqpDeliverable(deliverable_id={self.deliverable_id}, item_name='{self.item_name}')>"
+
+
+# ============================================================
+# 표준문서관리
+# ============================================================
+
+class QmsDocument(QmsBase):
+    """표준문서 헤더"""
+    __tablename__ = "qms_document"
+
+    doc_id = Column(Integer, primary_key=True, autoincrement=True)
+    doc_no = Column(String(50), unique=True, nullable=False)
+    doc_type = Column(String(20), nullable=False)  # MANUAL/PROCESS/REGULATION/GUIDELINE/FORM
+    title = Column(String(300), nullable=False)
+    department = Column(String(100))
+    revision = Column(Integer, default=1)
+    status = Column(String(20), default="DRAFT")  # DRAFT/REVIEW/APPROVED/OBSOLETE
+    prepared_by = Column(String(50))
+    reviewed_by = Column(String(50))
+    approved_by = Column(String(50))
+    effective_date = Column(Date)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    revisions = relationship("QmsDocumentRevision", back_populates="document", cascade="all, delete-orphan", passive_deletes=True)
+    attachments = relationship("QmsDocumentAttachment", back_populates="document", cascade="all, delete-orphan", passive_deletes=True)
+
+    def __repr__(self):
+        return f"<QmsDocument(doc_id={self.doc_id}, doc_no='{self.doc_no}')>"
+
+
+class QmsDocumentRevision(QmsBase):
+    """문서 개정 이력"""
+    __tablename__ = "qms_document_revision"
+
+    revision_id = Column(Integer, primary_key=True, autoincrement=True)
+    doc_id = Column(Integer, ForeignKey("qms_document.doc_id"), nullable=False, index=True)
+    revision_no = Column(Integer, nullable=False)
+    change_summary = Column(Text)
+    changed_by = Column(String(50))
+    previous_status = Column(String(20))
+    new_status = Column(String(20))
+    created_at = Column(DateTime, default=_utcnow)
+
+    document = relationship("QmsDocument", back_populates="revisions")
+
+    def __repr__(self):
+        return f"<QmsDocumentRevision(revision_id={self.revision_id}, doc_id={self.doc_id})>"
+
+
+class QmsDocumentAttachment(QmsBase):
+    """문서 첨부파일"""
+    __tablename__ = "qms_document_attachment"
+
+    attachment_id = Column(Integer, primary_key=True, autoincrement=True)
+    doc_id = Column(Integer, ForeignKey("qms_document.doc_id"), nullable=False, index=True)
+    file_name = Column(String(300), nullable=False)
+    file_path = Column(String(500), nullable=False)
+    file_size = Column(Integer)
+    mime_type = Column(String(100))
+    uploaded_by = Column(String(50))
+    created_at = Column(DateTime, default=_utcnow)
+
+    document = relationship("QmsDocument", back_populates="attachments")
+
+    def __repr__(self):
+        return f"<QmsDocumentAttachment(attachment_id={self.attachment_id}, file_name='{self.file_name}')>"
+
+
+# ============================================================
+# 내부심사관리
+# ============================================================
+
+class QmsAuditRequirement(QmsBase):
+    """SQ 요구사항"""
+    __tablename__ = "qms_audit_requirement"
+
+    req_id = Column(Integer, primary_key=True, autoincrement=True)
+    req_no = Column(String(50), unique=True, nullable=False)
+    clause_ref = Column(String(50))  # IATF 조항 번호
+    category = Column(String(100))
+    description = Column(Text, nullable=False)
+    audit_criteria = Column(Text)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    def __repr__(self):
+        return f"<QmsAuditRequirement(req_id={self.req_id}, req_no='{self.req_no}')>"
+
+
+class QmsAuditPlan(QmsBase):
+    """심사 계획"""
+    __tablename__ = "qms_audit_plan"
+
+    plan_id = Column(Integer, primary_key=True, autoincrement=True)
+    plan_no = Column(String(50), unique=True, nullable=False)
+    audit_year = Column(Integer, nullable=False)
+    audit_type = Column(String(20), default="INTERNAL")  # INTERNAL/SUPPLIER/PROCESS
+    title = Column(String(300), nullable=False)
+    scope = Column(Text)
+    department = Column(String(100))
+    lead_auditor = Column(String(50))
+    plan_start = Column(Date)
+    plan_end = Column(Date)
+    actual_start = Column(Date)
+    actual_end = Column(Date)
+    status = Column(String(20), default="PLANNED")  # PLANNED/IN_PROGRESS/COMPLETED/CANCELLED
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    findings = relationship("QmsAuditFinding", back_populates="plan", cascade="all, delete-orphan", passive_deletes=True)
+
+    def __repr__(self):
+        return f"<QmsAuditPlan(plan_id={self.plan_id}, plan_no='{self.plan_no}')>"
+
+
+class QmsAuditFinding(QmsBase):
+    """부적합/관찰"""
+    __tablename__ = "qms_audit_finding"
+
+    finding_id = Column(Integer, primary_key=True, autoincrement=True)
+    plan_id = Column(Integer, ForeignKey("qms_audit_plan.plan_id"), nullable=False, index=True)
+    finding_no = Column(String(50), unique=True, nullable=False)
+    finding_type = Column(String(20), nullable=False)  # MAJOR_NC/MINOR_NC/OBSERVATION/OFI
+    clause_ref = Column(String(50))
+    description = Column(Text, nullable=False)
+    evidence = Column(Text)
+    status = Column(String(20), default="OPEN")  # OPEN/ACTION_REQUIRED/CLOSED/VERIFIED
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    plan = relationship("QmsAuditPlan", back_populates="findings")
+    actions = relationship("QmsCorrectiveAction", back_populates="finding", cascade="all, delete-orphan", passive_deletes=True)
+
+    def __repr__(self):
+        return f"<QmsAuditFinding(finding_id={self.finding_id}, finding_no='{self.finding_no}')>"
+
+
+class QmsCorrectiveAction(QmsBase):
+    """시정조치"""
+    __tablename__ = "qms_corrective_action"
+
+    action_id = Column(Integer, primary_key=True, autoincrement=True)
+    finding_id = Column(Integer, ForeignKey("qms_audit_finding.finding_id"), nullable=False, index=True)
+    action_no = Column(String(50), unique=True, nullable=False)
+    root_cause = Column(Text)
+    containment_action = Column(Text)
+    corrective_action = Column(Text)
+    preventive_action = Column(Text)
+    responsible = Column(String(50))
+    target_date = Column(Date)
+    completion_date = Column(Date)
+    status = Column(String(20), default="OPEN")  # OPEN/IN_PROGRESS/COMPLETED/VERIFIED
+    verified_by = Column(String(50))
+    verified_date = Column(Date)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    finding = relationship("QmsAuditFinding", back_populates="actions")
+
+    def __repr__(self):
+        return f"<QmsCorrectiveAction(action_id={self.action_id}, action_no='{self.action_no}')>"
+
+
+# ============================================================
+# 교육/자격관리
+# ============================================================
+
+class QmsTrainingCourse(QmsBase):
+    """교육과정 마스터"""
+    __tablename__ = "qms_training_course"
+
+    course_id = Column(Integer, primary_key=True, autoincrement=True)
+    course_no = Column(String(50), unique=True, nullable=False)
+    course_name = Column(String(300), nullable=False)
+    category = Column(String(100))
+    duration_hours = Column(Float)
+    training_type = Column(String(20), default="INTERNAL")  # INTERNAL/EXTERNAL/OJT/ONLINE
+    recurrence_months = Column(Integer)  # 재교육 주기 (개월)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    records = relationship("QmsTrainingRecord", back_populates="course", cascade="all, delete-orphan", passive_deletes=True)
+
+    def __repr__(self):
+        return f"<QmsTrainingCourse(course_id={self.course_id}, course_no='{self.course_no}')>"
+
+
+class QmsTrainingRecord(QmsBase):
+    """교육이수 기록"""
+    __tablename__ = "qms_training_record"
+
+    record_id = Column(Integer, primary_key=True, autoincrement=True)
+    course_id = Column(Integer, ForeignKey("qms_training_course.course_id"), nullable=False, index=True)
+    trainee_id = Column(String(50), nullable=False)
+    training_date = Column(Date, nullable=False)
+    score = Column(Float)
+    result = Column(String(20), default="PENDING")  # PENDING/PASS/FAIL
+    next_due_date = Column(Date)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    course = relationship("QmsTrainingCourse", back_populates="records")
+
+    __table_args__ = (
+        UniqueConstraint("course_id", "trainee_id", "training_date"),
+    )
+
+    def __repr__(self):
+        return f"<QmsTrainingRecord(record_id={self.record_id}, trainee_id='{self.trainee_id}')>"
+
+
+class QmsQualification(QmsBase):
+    """자격/인증"""
+    __tablename__ = "qms_qualification"
+
+    qual_id = Column(Integer, primary_key=True, autoincrement=True)
+    qual_type = Column(String(50), nullable=False)
+    qual_name = Column(String(200), nullable=False)
+    holder_id = Column(String(50), nullable=False)
+    issuing_body = Column(String(200))
+    certificate_no = Column(String(100))
+    issue_date = Column(Date)
+    expiry_date = Column(Date)
+    status = Column(String(20), default="ACTIVE")  # ACTIVE/EXPIRED/SUSPENDED
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    audits = relationship("QmsQualAudit", back_populates="qualification", cascade="all, delete-orphan", passive_deletes=True)
+
+    def __repr__(self):
+        return f"<QmsQualification(qual_id={self.qual_id}, qual_name='{self.qual_name}')>"
+
+
+class QmsCompetencyMatrix(QmsBase):
+    """역량 매트릭스"""
+    __tablename__ = "qms_competency_matrix"
+
+    matrix_id = Column(Integer, primary_key=True, autoincrement=True)
+    employee_id = Column(String(50), nullable=False)
+    skill_name = Column(String(200), nullable=False)
+    required_level = Column(Integer, default=1)  # 1-5
+    current_level = Column(Integer, default=0)   # 0-5
+    gap = Column(Integer)  # required_level - current_level
+    evaluation_date = Column(Date)
+    evaluator = Column(String(50))
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("employee_id", "skill_name"),
+    )
+
+    def __repr__(self):
+        return f"<QmsCompetencyMatrix(matrix_id={self.matrix_id}, employee_id='{self.employee_id}')>"
+
+
+class QmsQualAudit(QmsBase):
+    """자격심사 기록"""
+    __tablename__ = "qms_qual_audit"
+
+    qual_audit_id = Column(Integer, primary_key=True, autoincrement=True)
+    qual_id = Column(Integer, ForeignKey("qms_qualification.qual_id"), nullable=False, index=True)
+    audit_date = Column(Date, nullable=False)
+    auditor = Column(String(50))
+    result = Column(String(20), default="PASS")  # PASS/FAIL/CONDITIONAL
+    score = Column(Float)
+    next_audit_date = Column(Date)
+    remarks = Column(Text)
+    created_at = Column(DateTime, default=_utcnow)
+
+    qualification = relationship("QmsQualification", back_populates="audits")
+
+    def __repr__(self):
+        return f"<QmsQualAudit(qual_audit_id={self.qual_audit_id}, qual_id={self.qual_id})>"
+
+
+# ============================================================
+# 규격관리 (Specification Management)
+# ============================================================
+
+class QmsSpecification(QmsBase):
+    """규격 마스터"""
+    __tablename__ = "qms_specification"
+
+    spec_mgmt_id = Column(Integer, primary_key=True, autoincrement=True)
+    spec_no = Column(String(50), unique=True, nullable=False)
+    spec_type = Column(String(20), default="CUSTOMER")  # CUSTOMER/DRAWING/LEGAL/INTERNAL
+    customer_id = Column(String(50), index=True)
+    product_id = Column(String(50), index=True)
+    title = Column(String(300), nullable=False)
+    revision = Column(Integer, default=1)
+    status = Column(String(20), default="ACTIVE")  # ACTIVE/SUPERSEDED/OBSOLETE
+    effective_date = Column(Date)
+    expiry_date = Column(Date)
+    source = Column(String(200))
+    remarks = Column(Text)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    drawings = relationship("QmsDrawingRevision", back_populates="specification", cascade="all, delete-orphan", passive_deletes=True)
+
+    def __repr__(self):
+        return f"<QmsSpecification(spec_mgmt_id={self.spec_mgmt_id}, spec_no='{self.spec_no}')>"
+
+
+class QmsDrawingRevision(QmsBase):
+    """도면 개정이력"""
+    __tablename__ = "qms_drawing_revision"
+
+    drawing_rev_id = Column(Integer, primary_key=True, autoincrement=True)
+    spec_mgmt_id = Column(Integer, ForeignKey("qms_specification.spec_mgmt_id"), nullable=False, index=True)
+    drawing_no = Column(String(50), nullable=False)
+    revision_no = Column(Integer, nullable=False)
+    change_summary = Column(Text)
+    changed_by = Column(String(50))
+    change_date = Column(Date)
+    file_path = Column(String(500))
+    created_at = Column(DateTime, default=_utcnow)
+
+    specification = relationship("QmsSpecification", back_populates="drawings")
+
+    def __repr__(self):
+        return f"<QmsDrawingRevision(drawing_rev_id={self.drawing_rev_id}, drawing_no='{self.drawing_no}')>"
+
+
+class QmsSiFaq(QmsBase):
+    """SI FAQ"""
+    __tablename__ = "qms_si_faq"
+
+    faq_id = Column(Integer, primary_key=True, autoincrement=True)
+    customer_id = Column(String(50), index=True)
+    category = Column(String(100))
+    question = Column(Text, nullable=False)
+    answer = Column(Text)
+    reference_spec_id = Column(Integer)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    def __repr__(self):
+        return f"<QmsSiFaq(faq_id={self.faq_id})>"
+
+
+class QmsCsr(QmsBase):
+    """CSR (고객 특별요구사항)"""
+    __tablename__ = "qms_csr"
+
+    csr_id = Column(Integer, primary_key=True, autoincrement=True)
+    csr_no = Column(String(50), unique=True, nullable=False)
+    customer_id = Column(String(50), index=True)
+    requirement = Column(Text, nullable=False)
+    category = Column(String(100))  # 품질/포장/물류/환경
+    iatf_clause = Column(String(50))
+    compliance_status = Column(String(20), default="PENDING")  # PENDING/COMPLIANT/NON_COMPLIANT/NA
+    responsible = Column(String(50))
+    target_date = Column(Date)
+    completion_date = Column(Date)
+    evidence = Column(Text)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    def __repr__(self):
+        return f"<QmsCsr(csr_id={self.csr_id}, csr_no='{self.csr_no}')>"
+
+
+# ============================================================
+# 고객심사관리 (Customer Audit Management)
+# ============================================================
+
+class QmsCustomerAudit(QmsBase):
+    """고객심사"""
+    __tablename__ = "qms_customer_audit"
+
+    cust_audit_id = Column(Integer, primary_key=True, autoincrement=True)
+    audit_no = Column(String(50), unique=True, nullable=False)
+    customer_id = Column(String(50), index=True)
+    audit_type = Column(String(20), default="SQ")  # SQ/PROCESS/PRODUCT/SYSTEM
+    audit_date = Column(Date)
+    audit_end_date = Column(Date)
+    auditor_name = Column(String(100))
+    scope = Column(Text)
+    result = Column(String(20), default="PENDING")  # PENDING/PASS/CONDITIONAL/FAIL
+    score = Column(Float)
+    status = Column(String(20), default="SCHEDULED")  # SCHEDULED/IN_PROGRESS/COMPLETED/CLOSED
+    remarks = Column(Text)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    findings = relationship("QmsCustomerAuditFinding", back_populates="audit", cascade="all, delete-orphan", passive_deletes=True)
+
+    def __repr__(self):
+        return f"<QmsCustomerAudit(cust_audit_id={self.cust_audit_id}, audit_no='{self.audit_no}')>"
+
+
+class QmsCustomerAuditFinding(QmsBase):
+    """고객심사 발견사항"""
+    __tablename__ = "qms_customer_audit_finding"
+
+    cust_finding_id = Column(Integer, primary_key=True, autoincrement=True)
+    cust_audit_id = Column(Integer, ForeignKey("qms_customer_audit.cust_audit_id"), nullable=False, index=True)
+    finding_no = Column(String(50), unique=True, nullable=False)
+    finding_type = Column(String(20), nullable=False)  # MAJOR_NC/MINOR_NC/OBSERVATION/OFI
+    clause_ref = Column(String(50))
+    description = Column(Text, nullable=False)
+    evidence = Column(Text)
+    status = Column(String(20), default="OPEN")  # OPEN/ACTION_REQUIRED/CLOSED/VERIFIED
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    audit = relationship("QmsCustomerAudit", back_populates="findings")
+    actions = relationship("QmsCustomerAuditAction", back_populates="finding", cascade="all, delete-orphan", passive_deletes=True)
+
+    def __repr__(self):
+        return f"<QmsCustomerAuditFinding(cust_finding_id={self.cust_finding_id}, finding_no='{self.finding_no}')>"
+
+
+class QmsCustomerAuditAction(QmsBase):
+    """고객심사 시정조치"""
+    __tablename__ = "qms_customer_audit_action"
+
+    cust_action_id = Column(Integer, primary_key=True, autoincrement=True)
+    cust_finding_id = Column(Integer, ForeignKey("qms_customer_audit_finding.cust_finding_id"), nullable=False, index=True)
+    action_no = Column(String(50), unique=True, nullable=False)
+    root_cause = Column(Text)
+    containment_action = Column(Text)
+    corrective_action = Column(Text)
+    preventive_action = Column(Text)
+    responsible = Column(String(50))
+    target_date = Column(Date)
+    completion_date = Column(Date)
+    status = Column(String(20), default="OPEN")  # OPEN/IN_PROGRESS/COMPLETED/VERIFIED
+    verified_by = Column(String(50))
+    verified_date = Column(Date)
+    customer_feedback = Column(Text)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    finding = relationship("QmsCustomerAuditFinding", back_populates="actions")
+
+    def __repr__(self):
+        return f"<QmsCustomerAuditAction(cust_action_id={self.cust_action_id}, action_no='{self.action_no}')>"
+
+
+# ============================================================
+# 성과지표관리
+# ============================================================
+
+class QmsKpiDefinition(QmsBase):
+    """KPI 정의"""
+    __tablename__ = "qms_kpi_definition"
+
+    kpi_id = Column(Integer, primary_key=True, autoincrement=True)
+    kpi_no = Column(String(50), unique=True, nullable=False)
+    kpi_name = Column(String(200), nullable=False)
+    process_name = Column(String(100))
+    category = Column(String(50))  # 품질/납기/원가/안전
+    unit = Column(String(20))  # %, ppm, 건
+    target_value = Column(Float)
+    target_direction = Column(String(10), default="HIGHER")  # HIGHER/LOWER
+    threshold_yellow = Column(Float)
+    threshold_red = Column(Float)
+    measurement_frequency = Column(String(20), default="MONTHLY")
+    responsible = Column(String(50))
+    formula = Column(Text)  # 산출식 설명
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    data_points = relationship("QmsKpiData", back_populates="kpi", cascade="all, delete-orphan", passive_deletes=True)
+
+    def __repr__(self):
+        return f"<QmsKpiDefinition(kpi_id={self.kpi_id}, kpi_no='{self.kpi_no}')>"
+
+
+class QmsKpiData(QmsBase):
+    """KPI 실적 데이터"""
+    __tablename__ = "qms_kpi_data"
+
+    data_id = Column(Integer, primary_key=True, autoincrement=True)
+    kpi_id = Column(Integer, ForeignKey("qms_kpi_definition.kpi_id"), nullable=False, index=True)
+    period = Column(String(20), nullable=False)  # 2026-01 등
+    actual_value = Column(Float, nullable=False)
+    status = Column(String(20))  # GREEN/YELLOW/RED (자동 계산)
+    remarks = Column(Text)
+    collected_by = Column(String(50))
+    collected_at = Column(DateTime)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    kpi = relationship("QmsKpiDefinition", back_populates="data_points")
+
+    __table_args__ = (
+        UniqueConstraint("kpi_id", "period"),
+    )
+
+    def __repr__(self):
+        return f"<QmsKpiData(data_id={self.data_id}, kpi_id={self.kpi_id}, period='{self.period}')>"
+
+
+class QmsProcessMonitor(QmsBase):
+    """공정 모니터링"""
+    __tablename__ = "qms_process_monitor"
+
+    monitor_id = Column(Integer, primary_key=True, autoincrement=True)
+    process_name = Column(String(100), nullable=False)
+    monitor_date = Column(Date, nullable=False)
+    monitor_type = Column(String(20), default="ROUTINE")  # ROUTINE/SPECIAL/LAYERED
+    auditor = Column(String(50))
+    result = Column(String(20), default="OK")  # OK/NG/NA
+    score = Column(Float)
+    findings = Column(Text)
+    actions_required = Column(Text)
+    status = Column(String(20), default="OPEN")  # OPEN/CLOSED
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    def __repr__(self):
+        return f"<QmsProcessMonitor(monitor_id={self.monitor_id}, process_name='{self.process_name}')>"
+
+
+class QmsRiskIssue(QmsBase):
+    """리스크/이슈"""
+    __tablename__ = "qms_risk_issue"
+
+    issue_id = Column(Integer, primary_key=True, autoincrement=True)
+    issue_no = Column(String(50), unique=True, nullable=False)
+    issue_type = Column(String(20), nullable=False)  # RISK/OPPORTUNITY/ISSUE
+    category = Column(String(100))
+    process_name = Column(String(100))
+    description = Column(Text, nullable=False)
+    severity = Column(Integer, default=3)  # 1-5
+    likelihood = Column(Integer, default=3)  # 1-5
+    risk_score = Column(Integer)  # severity * likelihood (자동계산)
+    mitigation_plan = Column(Text)
+    responsible = Column(String(50))
+    target_date = Column(Date)
+    status = Column(String(20), default="IDENTIFIED")  # IDENTIFIED/MITIGATING/RESOLVED/ACCEPTED
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    def __repr__(self):
+        return f"<QmsRiskIssue(issue_id={self.issue_id}, issue_no='{self.issue_no}')>"

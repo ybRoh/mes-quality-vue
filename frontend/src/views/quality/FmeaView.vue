@@ -1,47 +1,57 @@
 <template>
   <div class="page-container">
-    <PageHeader title="FMEA (고장모드 영향분석)" subtitle="IATF 16949 공정 FMEA 관리">
+    <PageHeader title="FMEA (고장모드 영향분석)" :subtitle="fmeaTypeLabel + ' 관리'">
       <template #actions>
-        <el-button type="primary" @click="showCreateDialog = true">
+        <el-button type="primary" @click="openCreateDialog">
           <el-icon><Plus /></el-icon>
           새 FMEA
         </el-button>
       </template>
     </PageHeader>
 
+    <!-- DFMEA / PFMEA 전환 -->
+    <div class="type-selector">
+      <el-radio-group v-model="fmeaType" size="default" @change="onTypeChange">
+        <el-radio-button value="DESIGN">DFMEA (설계)</el-radio-button>
+        <el-radio-button value="PROCESS">PFMEA (공정)</el-radio-button>
+      </el-radio-group>
+    </div>
+
     <el-tabs v-model="activeTab" type="border-card">
       <!-- Tab 1: FMEA 목록 -->
       <el-tab-pane label="FMEA 목록" name="list">
         <div class="filter-bar">
-          <el-select v-model="filterStatus" placeholder="상태 선택" clearable style="width: 150px;">
+          <el-select v-model="filterStatus" placeholder="상태 선택" clearable style="width: 150px;" @change="loadFmeaList">
             <el-option label="작성중" value="DRAFT" />
-            <el-option label="검토중" value="REVIEW" />
+            <el-option label="검토중" value="IN_REVIEW" />
             <el-option label="승인" value="APPROVED" />
+            <el-option label="종결" value="CLOSED" />
           </el-select>
-          <el-input v-model="searchKeyword" placeholder="검색 (제목, 제품)" clearable style="width: 250px;" @keyup.enter="loadFmeaList">
-            <template #prefix><el-icon><Search /></el-icon></template>
-          </el-input>
-          <el-button type="primary" size="small" @click="loadFmeaList">조회</el-button>
         </div>
 
         <el-table :data="fmeaList" border stripe v-loading="loading" @row-click="selectFmea">
-          <el-table-column prop="id" label="ID" width="60" align="center" />
-          <el-table-column prop="title" label="제목" min-width="200" />
-          <el-table-column prop="product_name" label="제품" width="130" />
-          <el-table-column prop="process_name" label="공정" width="130" />
+          <el-table-column prop="fmea_no" label="FMEA No." width="140" />
+          <el-table-column prop="product_name" label="제품" width="150" />
+          <el-table-column prop="fmea_type" label="유형" width="90" align="center">
+            <template #default="{ row }">
+              <el-tag :type="row.fmea_type === 'DESIGN' ? 'warning' : ''" size="small">
+                {{ row.fmea_type === 'DESIGN' ? 'DFMEA' : 'PFMEA' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="revision" label="Rev." width="70" align="center" />
           <el-table-column prop="status" label="상태" width="100" align="center">
             <template #default="{ row }">
               <el-tag :type="getStatusType(row.status)" size="small">{{ getStatusLabel(row.status) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="max_rpn" label="최대RPN" width="100" align="center">
+          <el-table-column prop="item_count" label="항목수" width="80" align="center" />
+          <el-table-column prop="prepared_by" label="작성자" width="100" />
+          <el-table-column prop="updated_at" label="수정일" width="120" align="center">
             <template #default="{ row }">
-              <el-tag :type="row.max_rpn >= 200 ? 'danger' : row.max_rpn >= 100 ? 'warning' : 'success'" effect="dark">
-                {{ row.max_rpn || '-' }}
-              </el-tag>
+              {{ row.updated_at ? row.updated_at.substring(0, 10) : '-' }}
             </template>
           </el-table-column>
-          <el-table-column prop="updated_at" label="수정일" width="120" align="center" />
           <el-table-column label="작업" width="120" align="center" fixed="right">
             <template #default="{ row }">
               <el-button type="primary" link size="small" @click.stop="editFmea(row)">편집</el-button>
@@ -52,10 +62,15 @@
       </el-tab-pane>
 
       <!-- Tab 2: FMEA 상세 (Matrix) -->
-      <el-tab-pane label="FMEA 항목" name="matrix" :disabled="!selectedFmea">
+      <el-tab-pane label="FMEA 항목" name="matrix">
+        <el-empty v-if="!selectedFmea" description="FMEA 목록에서 항목을 선택하세요." />
         <div v-if="selectedFmea" class="fmea-detail-header">
-          <h3>{{ selectedFmea.title }}</h3>
+          <h3>{{ selectedFmea.fmea_no }}</h3>
+          <el-tag :type="selectedFmea.fmea_type === 'DESIGN' ? 'warning' : ''" size="small">
+            {{ selectedFmea.fmea_type === 'DESIGN' ? 'DFMEA' : 'PFMEA' }}
+          </el-tag>
           <el-tag :type="getStatusType(selectedFmea.status)">{{ getStatusLabel(selectedFmea.status) }}</el-tag>
+          <span class="fmea-detail-product">{{ selectedFmea.product_name }}</span>
         </div>
 
         <FmeaMatrix
@@ -65,7 +80,15 @@
       </el-tab-pane>
 
       <!-- Tab 3: RPN 분석 -->
-      <el-tab-pane label="RPN 분석" name="rpnAnalysis" :disabled="!selectedFmea">
+      <el-tab-pane label="RPN 분석" name="rpnAnalysis">
+        <el-empty v-if="!selectedFmea" description="FMEA 목록에서 항목을 선택하세요." />
+        <div v-if="rpnSummary" class="kpi-row">
+          <KpiCard title="총 항목" :value="rpnSummary.total_items" unit="건" color="#0A6ED1" />
+          <KpiCard title="High (≥100)" :value="rpnSummary.high_rpn_count" unit="건" color="#BB0000" />
+          <KpiCard title="Medium (50~99)" :value="rpnSummary.medium_rpn_count" unit="건" color="#E9730C" />
+          <KpiCard title="평균 RPN" :value="rpnSummary.avg_rpn" color="#107E3E" />
+        </div>
+
         <ParetoChart
           v-if="rpnAnalysis.categories.length > 0"
           title="RPN 파레토 분석"
@@ -83,31 +106,52 @@
       width="600px"
     >
       <el-form :model="fmeaForm" label-position="top">
-        <el-form-item label="제목" required>
-          <el-input v-model="fmeaForm.title" placeholder="FMEA 제목 입력" />
-        </el-form-item>
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="제품명">
-              <el-input v-model="fmeaForm.product_name" placeholder="제품명" />
+            <el-form-item label="FMEA No." required>
+              <el-input v-model="fmeaForm.fmea_no" placeholder="FMEA-D-001" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="공정명">
-              <el-input v-model="fmeaForm.process_name" placeholder="공정명" />
+            <el-form-item label="유형" required>
+              <el-select v-model="fmeaForm.fmea_type" style="width: 100%;">
+                <el-option label="DFMEA (설계)" value="DESIGN" />
+                <el-option label="PFMEA (공정)" value="PROCESS" />
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="상태">
-          <el-select v-model="fmeaForm.status" style="width: 100%;">
-            <el-option label="작성중" value="DRAFT" />
-            <el-option label="검토중" value="REVIEW" />
-            <el-option label="승인" value="APPROVED" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="비고">
-          <el-input v-model="fmeaForm.remarks" type="textarea" :rows="3" />
-        </el-form-item>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="제품 ID" required>
+              <el-select v-model="fmeaForm.product_id" placeholder="제품 선택" filterable style="width: 100%;">
+                <el-option v-for="p in productOptions" :key="p.product_id" :label="p.product_name" :value="p.product_id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="상태">
+              <el-select v-model="fmeaForm.status" style="width: 100%;">
+                <el-option label="작성중" value="DRAFT" />
+                <el-option label="검토중" value="IN_REVIEW" />
+                <el-option label="승인" value="APPROVED" />
+                <el-option label="종결" value="CLOSED" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="작성자">
+              <el-input v-model="fmeaForm.prepared_by" placeholder="작성자" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="승인자">
+              <el-input v-model="fmeaForm.approved_by" placeholder="승인자" />
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
       <template #footer>
         <el-button @click="showCreateDialog = false">취소</el-button>
@@ -118,18 +162,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { Plus, Search } from '@element-plus/icons-vue'
+import { ref, computed, onMounted } from 'vue'
+import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import PageHeader from '@/components/common/PageHeader.vue'
+import KpiCard from '@/components/common/KpiCard.vue'
 import FmeaMatrix from '@/components/quality/FmeaMatrix.vue'
 import ParetoChart from '@/components/charts/ParetoChart.vue'
 import { fmeaApi } from '@/api/quality'
+import client from '@/api/client'
 
 const activeTab = ref('list')
+const fmeaType = ref('PROCESS')
 const loading = ref(false)
 const filterStatus = ref('')
-const searchKeyword = ref('')
 const showCreateDialog = ref(false)
 const editingFmea = ref(false)
 
@@ -137,21 +183,27 @@ const fmeaList = ref<any[]>([])
 const selectedFmea = ref<any>(null)
 const fmeaItems = ref<any[]>([])
 const rpnAnalysis = ref<{ categories: string[]; values: number[] }>({ categories: [], values: [] })
+const rpnSummary = ref<any>(null)
+const productOptions = ref<any[]>([])
+
+const fmeaTypeLabel = computed(() => fmeaType.value === 'DESIGN' ? 'DFMEA (설계 FMEA)' : 'PFMEA (공정 FMEA)')
 
 const fmeaForm = ref({
-  id: null as number | null,
-  title: '',
-  product_name: '',
-  process_name: '',
+  fmea_id: null as number | null,
+  fmea_no: '',
+  product_id: '',
+  fmea_type: 'PROCESS',
   status: 'DRAFT',
-  remarks: ''
+  prepared_by: '',
+  approved_by: ''
 })
 
 function getStatusType(status: string): '' | 'success' | 'warning' | 'danger' | 'info' {
   switch (status) {
     case 'DRAFT': return 'info'
-    case 'REVIEW': return 'warning'
+    case 'IN_REVIEW': return 'warning'
     case 'APPROVED': return 'success'
+    case 'CLOSED': return ''
     default: return 'info'
   }
 }
@@ -159,20 +211,41 @@ function getStatusType(status: string): '' | 'success' | 'warning' | 'danger' | 
 function getStatusLabel(status: string): string {
   switch (status) {
     case 'DRAFT': return '작성중'
-    case 'REVIEW': return '검토중'
+    case 'IN_REVIEW': return '검토중'
     case 'APPROVED': return '승인'
+    case 'CLOSED': return '종결'
     default: return status
   }
 }
 
+function onTypeChange() {
+  selectedFmea.value = null
+  activeTab.value = 'list'
+  loadFmeaList()
+}
+
 onMounted(() => {
   loadFmeaList()
+  loadProducts()
 })
+
+async function loadProducts() {
+  try {
+    const res = await client.get('/master/products', { params: { size: 100 } })
+    productOptions.value = res.data.items || res.data || []
+  } catch (e) {
+    console.warn('제품 목록 조회 실패:', e)
+    productOptions.value = []
+  }
+}
 
 async function loadFmeaList() {
   loading.value = true
   try {
-    const res = await fmeaApi.getList({ status: filterStatus.value || undefined })
+    const res = await fmeaApi.getList({
+      fmea_type: fmeaType.value,
+      status: filterStatus.value || undefined
+    })
     fmeaList.value = res.data.items || res.data
   } catch (e) {
     console.warn('FMEA 목록 조회 실패:', e)
@@ -188,7 +261,7 @@ async function selectFmea(row: any) {
   activeTab.value = 'matrix'
 
   try {
-    const res = await fmeaApi.getItems(row.id)
+    const res = await fmeaApi.getItems(row.fmea_id)
     fmeaItems.value = res.data
   } catch (e) {
     console.warn('FMEA 항목 조회 실패:', e)
@@ -196,38 +269,72 @@ async function selectFmea(row: any) {
     fmeaItems.value = []
   }
 
-  loadRpnAnalysis(row.id)
+  loadRpnAnalysis(row.fmea_id)
 }
 
 async function loadRpnAnalysis(fmeaId: number) {
   try {
     const res = await fmeaApi.getRpnAnalysis(fmeaId)
-    rpnAnalysis.value = res.data
+    const data = res.data
+    rpnSummary.value = {
+      total_items: data.total_items,
+      high_rpn_count: data.high_rpn_count,
+      medium_rpn_count: data.medium_rpn_count,
+      avg_rpn: data.avg_rpn,
+      max_rpn: data.max_rpn
+    }
+    // 파레토 차트: top RPN items
+    if (data.top_rpn_items && data.top_rpn_items.length > 0) {
+      rpnAnalysis.value = {
+        categories: data.top_rpn_items.map((i: any) => i.failure_mode || i.process_step || `항목${i.item_id}`),
+        values: data.top_rpn_items.map((i: any) => i.rpn || 0)
+      }
+    } else {
+      rpnAnalysis.value = { categories: [], values: [] }
+    }
   } catch (e) {
     console.warn('RPN 분석 조회 실패:', e)
-    ElMessage.error('RPN 분석 데이터를 불러오는데 실패했습니다')
+    rpnSummary.value = null
     rpnAnalysis.value = { categories: [], values: [] }
   }
+}
+
+function openCreateDialog() {
+  editingFmea.value = false
+  fmeaForm.value = {
+    fmea_id: null,
+    fmea_no: '',
+    product_id: '',
+    fmea_type: fmeaType.value,
+    status: 'DRAFT',
+    prepared_by: '',
+    approved_by: ''
+  }
+  showCreateDialog.value = true
 }
 
 function editFmea(row: any) {
   editingFmea.value = true
   fmeaForm.value = {
-    id: row.id,
-    title: row.title,
-    product_name: row.product_name,
-    process_name: row.process_name,
+    fmea_id: row.fmea_id,
+    fmea_no: row.fmea_no,
+    product_id: row.product_id,
+    fmea_type: row.fmea_type,
     status: row.status,
-    remarks: row.remarks || ''
+    prepared_by: row.prepared_by || '',
+    approved_by: row.approved_by || ''
   }
   showCreateDialog.value = true
 }
 
 async function deleteFmea(row: any) {
   try {
-    await ElMessageBox.confirm(`"${row.title}"을(를) 삭제하시겠습니까?`, '삭제 확인', { type: 'warning' })
-    await fmeaApi.delete(row.id)
+    await ElMessageBox.confirm(`"${row.fmea_no}"을(를) 삭제하시겠습니까?`, '삭제 확인', { type: 'warning' })
+    await fmeaApi.delete(row.fmea_id)
     ElMessage.success('삭제되었습니다.')
+    if (selectedFmea.value?.fmea_id === row.fmea_id) {
+      selectedFmea.value = null
+    }
     loadFmeaList()
   } catch {
     // cancelled or error
@@ -235,22 +342,34 @@ async function deleteFmea(row: any) {
 }
 
 async function submitFmea() {
-  if (!fmeaForm.value.title) {
-    ElMessage.warning('제목을 입력하세요.')
+  if (!fmeaForm.value.fmea_no) {
+    ElMessage.warning('FMEA No.를 입력하세요.')
+    return
+  }
+  if (!fmeaForm.value.product_id) {
+    ElMessage.warning('제품을 선택하세요.')
     return
   }
 
   try {
-    if (fmeaForm.value.id) {
-      await fmeaApi.update(fmeaForm.value.id, fmeaForm.value)
+    const payload = {
+      fmea_no: fmeaForm.value.fmea_no,
+      product_id: fmeaForm.value.product_id,
+      fmea_type: fmeaForm.value.fmea_type,
+      status: fmeaForm.value.status,
+      prepared_by: fmeaForm.value.prepared_by || undefined,
+      approved_by: fmeaForm.value.approved_by || undefined
+    }
+
+    if (fmeaForm.value.fmea_id) {
+      await fmeaApi.update(fmeaForm.value.fmea_id, payload)
       ElMessage.success('수정되었습니다.')
     } else {
-      await fmeaApi.create(fmeaForm.value)
+      await fmeaApi.create(payload)
       ElMessage.success('생성되었습니다.')
     }
     showCreateDialog.value = false
     editingFmea.value = false
-    fmeaForm.value = { id: null, title: '', product_name: '', process_name: '', status: 'DRAFT', remarks: '' }
     loadFmeaList()
   } catch {
     ElMessage.error('저장에 실패했습니다.')
@@ -261,10 +380,10 @@ async function saveFmeaItems(items: any[]) {
   if (!selectedFmea.value) return
   try {
     for (const item of items) {
-      if (item.id) {
-        await fmeaApi.updateItem(selectedFmea.value.id, item.id, item)
+      if (item.item_id) {
+        await fmeaApi.updateItem(selectedFmea.value.fmea_id, item.item_id, item)
       } else {
-        await fmeaApi.createItem(selectedFmea.value.id, item)
+        await fmeaApi.createItem(selectedFmea.value.fmea_id, item)
       }
     }
     ElMessage.success('FMEA 항목이 저장되었습니다.')
@@ -276,6 +395,10 @@ async function saveFmeaItems(items: any[]) {
 </script>
 
 <style scoped>
+.type-selector {
+  margin-bottom: 16px;
+}
+
 .fmea-detail-header {
   display: flex;
   align-items: center;
@@ -289,5 +412,17 @@ async function saveFmeaItems(items: any[]) {
   font-size: 18px;
   font-weight: 600;
   margin: 0;
+}
+
+.fmea-detail-product {
+  color: var(--qms-text-secondary);
+  font-size: 14px;
+}
+
+.kpi-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 </style>

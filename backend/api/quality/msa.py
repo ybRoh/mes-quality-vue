@@ -5,9 +5,12 @@ MSA (측정시스템분석) API 라우터
 - GR&R 계산
 """
 
+import logging
 from datetime import datetime, timezone
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -153,6 +156,7 @@ def create_msa_study(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(study)
 
@@ -196,6 +200,7 @@ def update_msa_study(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(study)
 
@@ -220,6 +225,7 @@ def delete_msa_study(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     return {"message": "MSA 연구가 삭제되었습니다"}
 
@@ -273,6 +279,7 @@ def add_measurements(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     for m in created:
         db.refresh(m)
@@ -333,6 +340,7 @@ def calculate_msa(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
 
     return GrrResultResponse(

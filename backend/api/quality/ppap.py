@@ -5,9 +5,12 @@ PPAP (생산부품승인절차) API 라우터
 - 완성도 계산
 """
 
+import logging
 from datetime import datetime, timezone
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -165,6 +168,7 @@ def create_ppap(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(ppap)
 
@@ -253,6 +257,7 @@ def update_ppap(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(ppap)
 
@@ -278,6 +283,7 @@ def delete_ppap(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     return {"message": "PPAP가 삭제되었습니다"}
 
@@ -338,6 +344,7 @@ def update_ppap_element(
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("DB commit failed")
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(element)
 

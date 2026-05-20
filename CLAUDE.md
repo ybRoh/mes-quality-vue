@@ -36,7 +36,7 @@ cd backend && python3 -m alembic upgrade head
 The central design constraint: two SQLAlchemy declarative bases coexist in `models/base.py`.
 
 - **`ExistingBase`** — Maps 38 existing tables from `mes-streamlit` (read-only, never call `create_all`)
-- **`QmsBase`** — 11 new tables with `qms_` prefix (safe for `create_all`, managed by Alembic)
+- **`QmsBase`** — 23+ QMS tables with `qms_` prefix (safe for `create_all`, managed by Alembic)
 
 `main.py` lifespan calls `QmsBase.metadata.create_all(bind=engine)` on startup. Alembic `env.py` filters migrations to `qms_*` tables via `include_name`.
 
@@ -48,11 +48,11 @@ backend/
 ├── database.py        # engine + SessionLocal (no get_db here — it's in api/deps.py)
 ├── models/
 │   ├── existing.py    # 38 read-only table mappings (Product, Machine, Customer, Claim, etc.)
-│   └── iatf.py        # 11 QMS tables with relationships + cascade deletes
+│   └── iatf.py        # 23+ QMS tables with relationships + cascade deletes
 ├── api/
 │   ├── deps.py        # get_db(), get_current_user(), get_current_active_admin()
 │   ├── analysis/      # 4 routers: period, type_based, equipment, specification
-│   ├── quality/       # 8 routers: spc, fmea, control_plan, msa, ppap, apqp, claim, inspection
+│   ├── quality/       # 12 routers: spc, fmea, control_plan, msa, ppap, apqp, claim, inspection, document, audit, training
 │   └── master/        # 4 routers: product, machine, customer, worker (read-only)
 ├── services/
 │   ├── spc_service.py # I-MR/Xbar-R charts, Cp/Cpk/Pp/Ppk with SPC constant tables
@@ -76,7 +76,7 @@ frontend/src/
 ├── api/
 │   ├── client.ts      # Axios instance: JWT Bearer interceptor, 401→logout redirect
 │   ├── analysis.ts    # 12 analysis endpoints
-│   └── quality.ts     # All quality module API calls (spc, fmea, msa, ppap, apqp, claim)
+│   └── quality.ts     # All quality module API calls (spc, fmea, msa, ppap, apqp, claim, document, audit, training)
 ├── stores/auth.ts     # Pinia: token + user in localStorage, login/logout actions
 ├── router/index.ts    # Auth guard with JWT expiry check (decodes exp from token)
 ├── styles/variables.css  # --qms-* CSS custom properties (SAP Fiori color palette)
@@ -87,7 +87,9 @@ frontend/src/
 │   └── quality/       # FmeaMatrix, ControlPlanForm, EightDStepper, PpapChecklist
 └── views/
     ├── analysis/      # 4 views, each with 3 tab panes
-    └── quality/       # 8 views: SPC, FMEA, Control Plan, MSA, PPAP, APQP, Claim, Inspection
+    └── quality/       # 16 views: SPC, FMEA, ControlPlan, MSA, PPAP, APQP, Claim, Inspection,
+                       #   Document, Audit (Requirement/Plan/Finding/CorrectiveAction),
+                       #   Training, Qualification, Competency
 ```
 
 **Key conventions:**

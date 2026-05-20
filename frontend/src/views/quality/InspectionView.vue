@@ -4,15 +4,17 @@
 
     <div class="card">
       <div class="filter-bar">
-        <DateRangePicker v-model="dateRange" />
-        <el-input v-model="searchSpec" placeholder="제품규격 검색" clearable style="width: 200px;">
+        <el-input v-model="searchLot" placeholder="로트번호 검색" clearable style="width: 200px;">
           <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
         <el-select v-model="filterStage" placeholder="검사 단계" clearable style="width: 150px;">
-          <el-option label="수입검사" value="INCOMING" />
-          <el-option label="공정검사" value="IN_PROCESS" />
-          <el-option label="최종검사" value="FINAL" />
-          <el-option label="출하검사" value="OUTGOING" />
+          <el-option label="초물검사" value="FIRST" />
+          <el-option label="중간검사" value="MIDDLE" />
+          <el-option label="최종검사" value="LAST" />
+        </el-select>
+        <el-select v-model="filterResult" placeholder="판정" clearable style="width: 120px;">
+          <el-option label="합격" value="PASS" />
+          <el-option label="불합격" value="FAIL" />
         </el-select>
         <el-button type="primary" @click="loadInspections">
           <el-icon><Search /></el-icon>
@@ -34,8 +36,8 @@
             {{ row.result === 'PASS' ? '합격' : '불합격' }}
           </el-tag>
         </template>
-        <template #stage="{ row }">
-          {{ getStageLabel(row.stage) }}
+        <template #insp_stage="{ row }">
+          {{ getStageLabel(row.insp_stage) }}
         </template>
         <template #columns>
           <el-table-column label="상세" width="80" align="center" fixed="right">
@@ -56,7 +58,7 @@
               <el-icon><Back /></el-icon>
               목록으로
             </el-button>
-            <h3 style="margin: 8px 0 0 0;">검사번호: {{ selectedInspection.inspection_no }}</h3>
+            <h3 style="margin: 8px 0 0 0;">검사 #{{ selectedInspection.insp_id }}</h3>
           </div>
           <el-tag :type="selectedInspection.result === 'PASS' ? 'success' : 'danger'" effect="dark" size="large">
             {{ selectedInspection.result === 'PASS' ? '합격' : '불합격' }}
@@ -68,52 +70,51 @@
       <div class="card">
         <div class="card-title">검사 정보</div>
         <el-descriptions :column="3" border>
-          <el-descriptions-item label="검사번호">{{ selectedInspection.inspection_no }}</el-descriptions-item>
-          <el-descriptions-item label="제품규격">{{ selectedInspection.product_spec }}</el-descriptions-item>
+          <el-descriptions-item label="검사 ID">{{ selectedInspection.insp_id }}</el-descriptions-item>
+          <el-descriptions-item label="제품">{{ selectedInspection.product_name || selectedInspection.product_id }}</el-descriptions-item>
           <el-descriptions-item label="로트번호">{{ selectedInspection.lot_no }}</el-descriptions-item>
-          <el-descriptions-item label="검사 단계">{{ getStageLabel(selectedInspection.stage) }}</el-descriptions-item>
-          <el-descriptions-item label="검사일">{{ selectedInspection.inspection_date }}</el-descriptions-item>
-          <el-descriptions-item label="검사자">{{ selectedInspection.inspector }}</el-descriptions-item>
-          <el-descriptions-item label="검사 수량">{{ selectedInspection.sample_qty }}</el-descriptions-item>
-          <el-descriptions-item label="합격 수량">{{ selectedInspection.pass_qty }}</el-descriptions-item>
-          <el-descriptions-item label="불합격 수량">{{ selectedInspection.fail_qty }}</el-descriptions-item>
+          <el-descriptions-item label="검사 단계">{{ getStageLabel(selectedInspection.insp_stage) }}</el-descriptions-item>
+          <el-descriptions-item label="검사일">{{ selectedInspection.insp_date }}</el-descriptions-item>
+          <el-descriptions-item label="검사자">{{ selectedInspection.inspector_name || '-' }}</el-descriptions-item>
         </el-descriptions>
       </div>
 
       <!-- Measurement Values -->
-      <div class="card">
+      <div class="card" v-if="measurements.length > 0">
         <div class="card-title">측정값 상세</div>
         <el-table :data="measurements" border stripe size="small">
-          <el-table-column prop="item_no" label="번호" width="60" align="center" />
-          <el-table-column prop="characteristic" label="검사항목" min-width="150" />
-          <el-table-column prop="specification" label="규격" width="130" align="center" />
-          <el-table-column prop="lsl" label="LSL" width="90" align="right" />
-          <el-table-column prop="usl" label="USL" width="90" align="right" />
+          <el-table-column prop="sample_no" label="시료" width="60" align="center" />
+          <el-table-column prop="insp_item" label="검사항목" min-width="150" />
+          <el-table-column prop="spec_nominal" label="기준값" width="100" align="right" />
+          <el-table-column prop="spec_lsl" label="LSL" width="90" align="right" />
+          <el-table-column prop="spec_usl" label="USL" width="90" align="right" />
           <el-table-column prop="measured_value" label="측정값" width="100" align="right">
             <template #default="{ row }">
-              <span :class="{ 'value-fail': row.measured_value < row.lsl || row.measured_value > row.usl }">
-                {{ row.measured_value }}
+              <span :class="{ 'value-fail': isOutOfSpec(row) }">
+                {{ row.measured_value ?? '-' }}
               </span>
             </template>
           </el-table-column>
-          <el-table-column prop="unit" label="단위" width="60" align="center" />
-          <el-table-column label="판정" width="80" align="center">
+          <el-table-column prop="judgment" label="판정" width="80" align="center">
             <template #default="{ row }">
               <el-tag
-                :type="row.measured_value >= row.lsl && row.measured_value <= row.usl ? 'success' : 'danger'"
+                :type="row.judgment === 'OK' ? 'success' : 'danger'"
                 size="small"
               >
-                {{ row.measured_value >= row.lsl && row.measured_value <= row.usl ? 'OK' : 'NG' }}
+                {{ row.judgment }}
               </el-tag>
             </template>
           </el-table-column>
         </el-table>
       </div>
+      <div class="card" v-else>
+        <el-empty description="측정값 데이터가 없습니다" :image-size="60" />
+      </div>
 
       <!-- Remarks -->
-      <div v-if="selectedInspection.remarks" class="card">
+      <div v-if="selectedInspection.remark" class="card">
         <div class="card-title">비고</div>
-        <p>{{ selectedInspection.remarks }}</p>
+        <p>{{ selectedInspection.remark }}</p>
       </div>
     </div>
   </div>
@@ -124,43 +125,43 @@ import { ref, onMounted } from 'vue'
 import { Search, Back } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/common/PageHeader.vue'
-import DateRangePicker from '@/components/common/DateRangePicker.vue'
 import DataTable from '@/components/common/DataTable.vue'
 import type { TableColumn } from '@/components/common/DataTable.vue'
 import { inspectionApi } from '@/api/quality'
-import dayjs from 'dayjs'
 
 const loading = ref(false)
-const dateRange = ref<[string, string]>([
-  dayjs().subtract(30, 'day').format('YYYY-MM-DD'),
-  dayjs().format('YYYY-MM-DD')
-])
-const searchSpec = ref('')
+const searchLot = ref('')
 const filterStage = ref('')
+const filterResult = ref('')
 
 const inspections = ref<any[]>([])
 const selectedInspection = ref<any>(null)
 const measurements = ref<any[]>([])
 
 const inspectionColumns: TableColumn[] = [
-  { prop: 'inspection_no', label: '검사번호', width: 150 },
-  { prop: 'product_spec', label: '제품규격', width: 130 },
-  { prop: 'lot_no', label: '로트번호', width: 130 },
-  { prop: 'stage', label: '검사단계', width: 100 },
-  { prop: 'inspection_date', label: '검사일', width: 120, sortable: true },
-  { prop: 'inspector', label: '검사자', width: 90 },
-  { prop: 'sample_qty', label: '검사수량', width: 90, align: 'right' },
+  { prop: 'insp_id', label: '검사ID', width: 80 },
+  { prop: 'product_name', label: '제품명', width: 130 },
+  { prop: 'lot_no', label: '로트번호', width: 200 },
+  { prop: 'insp_stage', label: '검사단계', width: 100 },
+  { prop: 'insp_date', label: '검사일', width: 120, sortable: true },
+  { prop: 'inspector_name', label: '검사자', width: 90 },
   { prop: 'result', label: '판정', width: 90 }
 ]
 
 function getStageLabel(stage: string): string {
   switch (stage) {
-    case 'INCOMING': return '수입검사'
-    case 'IN_PROCESS': return '공정검사'
-    case 'FINAL': return '최종검사'
-    case 'OUTGOING': return '출하검사'
-    default: return stage
+    case 'FIRST': return '초물검사'
+    case 'MIDDLE': return '중간검사'
+    case 'LAST': return '최종검사'
+    default: return stage || '-'
   }
+}
+
+function isOutOfSpec(row: any): boolean {
+  if (row.measured_value == null) return false
+  if (row.spec_lsl != null && row.measured_value < row.spec_lsl) return true
+  if (row.spec_usl != null && row.measured_value > row.spec_usl) return true
+  return false
 }
 
 onMounted(() => {
@@ -171,8 +172,9 @@ async function loadInspections() {
   loading.value = true
   try {
     const res = await inspectionApi.getList({
-      product_id: searchSpec.value || undefined,
-      insp_stage: filterStage.value || undefined
+      lot_no: searchLot.value || undefined,
+      insp_stage: filterStage.value || undefined,
+      result: filterResult.value || undefined
     })
     inspections.value = res.data.items || res.data
   } catch (e) {
@@ -185,14 +187,14 @@ async function loadInspections() {
 }
 
 async function viewDetail(row: any) {
-  selectedInspection.value = row
-
   try {
-    const res = await inspectionApi.getMeasurements(row.id)
-    measurements.value = res.data
+    const res = await inspectionApi.getById(row.insp_id)
+    selectedInspection.value = res.data
+    measurements.value = res.data.values || []
   } catch (e) {
-    console.warn('측정값 조회 실패:', e)
-    ElMessage.error('측정값 데이터를 불러오는데 실패했습니다')
+    console.warn('검사 상세 조회 실패:', e)
+    ElMessage.error('검사 상세 데이터를 불러오는데 실패했습니다')
+    selectedInspection.value = row
     measurements.value = []
   }
 }

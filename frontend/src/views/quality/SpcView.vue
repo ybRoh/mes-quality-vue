@@ -200,8 +200,8 @@ async function loadSpcData() {
     stats.value = {
       mean,
       std,
-      min: Math.min(...values),
-      max: Math.max(...values),
+      min: values.length > 0 ? Math.min(...values) : 0,
+      max: values.length > 0 ? Math.max(...values) : 0,
       count: values.length,
       oocCount
     }

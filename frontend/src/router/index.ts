@@ -79,19 +79,106 @@ const routes: RouteRecordRaw[] = [
         path: 'quality/inspection',
         name: 'Inspection',
         component: () => import('@/views/quality/InspectionView.vue')
+      },
+      // 표준문서관리
+      {
+        path: 'quality/document',
+        name: 'Document',
+        component: () => import('@/views/quality/DocumentView.vue')
+      },
+      // 규격관리
+      {
+        path: 'quality/specification',
+        name: 'Specification',
+        component: () => import('@/views/quality/SpecificationView.vue')
+      },
+      {
+        path: 'quality/si-faq',
+        name: 'SiFaq',
+        component: () => import('@/views/quality/SiFaqView.vue')
+      },
+      {
+        path: 'quality/csr',
+        name: 'Csr',
+        component: () => import('@/views/quality/CsrView.vue')
+      },
+      // 내부심사관리
+      {
+        path: 'quality/audit-requirement',
+        name: 'AuditRequirement',
+        component: () => import('@/views/quality/AuditRequirementView.vue')
+      },
+      {
+        path: 'quality/audit-plan',
+        name: 'AuditPlan',
+        component: () => import('@/views/quality/AuditPlanView.vue')
+      },
+      {
+        path: 'quality/audit-finding',
+        name: 'AuditFinding',
+        component: () => import('@/views/quality/AuditFindingView.vue')
+      },
+      {
+        path: 'quality/corrective-action',
+        name: 'CorrectiveAction',
+        component: () => import('@/views/quality/CorrectiveActionView.vue')
+      },
+      // 고객심사관리
+      {
+        path: 'quality/customer-audit',
+        name: 'CustomerAudit',
+        component: () => import('@/views/quality/CustomerAuditView.vue')
+      },
+      {
+        path: 'quality/customer-audit-finding',
+        name: 'CustomerAuditFinding',
+        component: () => import('@/views/quality/CustomerAuditFindingView.vue')
+      },
+      {
+        path: 'quality/customer-audit-action',
+        name: 'CustomerAuditAction',
+        component: () => import('@/views/quality/CustomerAuditActionView.vue')
+      },
+      // 교육/자격관리
+      {
+        path: 'quality/training',
+        name: 'Training',
+        component: () => import('@/views/quality/TrainingView.vue')
+      },
+      {
+        path: 'quality/qualification',
+        name: 'Qualification',
+        component: () => import('@/views/quality/QualificationView.vue')
+      },
+      {
+        path: 'quality/competency',
+        name: 'Competency',
+        component: () => import('@/views/quality/CompetencyView.vue')
+      },
+      // 성과지표관리
+      {
+        path: 'quality/kpi-dashboard',
+        name: 'KpiDashboard',
+        component: () => import('@/views/quality/KpiDashboardView.vue')
+      },
+      {
+        path: 'quality/kpi-definition',
+        name: 'KpiDefinition',
+        component: () => import('@/views/quality/KpiDefinitionView.vue')
+      },
+      {
+        path: 'quality/process-monitor',
+        name: 'ProcessMonitor',
+        component: () => import('@/views/quality/ProcessMonitorView.vue')
+      },
+      {
+        path: 'quality/risk-issue',
+        name: 'RiskIssue',
+        component: () => import('@/views/quality/RiskIssueView.vue')
       }
     ]
   }
 ]
-
-function isTokenExpired(token: string): boolean {
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    return payload.exp * 1000 < Date.now()
-  } catch {
-    return true
-  }
-}
 
 const router = createRouter({
   history: createWebHistory(),
@@ -99,14 +186,15 @@ const router = createRouter({
 })
 
 router.beforeEach((to, _from, next) => {
+  if (to.meta.public) {
+    next()
+    return
+  }
+
   const authStore = useAuthStore()
-  if (!to.meta.public) {
-    const token = authStore.token
-    if (!authStore.isLoggedIn || !token || isTokenExpired(token)) {
-      authStore.logout()
-      next('/login')
-      return
-    }
+  if (!authStore.isLoggedIn) {
+    next('/login')
+    return
   }
   next()
 })

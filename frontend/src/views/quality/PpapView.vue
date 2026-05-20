@@ -22,18 +22,18 @@
       </div>
 
       <el-table :data="ppapList" border stripe v-loading="loading" @row-click="selectPpap">
-        <el-table-column prop="id" label="ID" width="60" align="center" />
+        <el-table-column prop="ppap_id" label="ID" width="60" align="center" />
         <el-table-column prop="ppap_no" label="PPAP 번호" width="150" />
         <el-table-column prop="product_name" label="제품" width="130" />
-        <el-table-column prop="customer" label="고객사" width="130" />
+        <el-table-column prop="customer_name" label="고객사" width="130" />
         <el-table-column prop="submission_level" label="Level" width="80" align="center">
           <template #default="{ row }">
             <el-tag size="small">Lv.{{ row.submission_level }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="completion_pct" label="완료율" width="120" align="center">
+        <el-table-column prop="completeness_pct" label="완료율" width="120" align="center">
           <template #default="{ row }">
-            <el-progress :percentage="row.completion_pct || 0" :stroke-width="12" :text-inside="true" style="width: 90px;" />
+            <el-progress :percentage="row.completeness_pct || 0" :stroke-width="12" :text-inside="true" style="width: 90px;" />
           </template>
         </el-table-column>
         <el-table-column prop="status" label="상태" width="100" align="center">
@@ -60,7 +60,7 @@
               목록으로
             </el-button>
             <h3 style="margin: 8px 0 0 0;">{{ selectedPpap.ppap_no }} - {{ selectedPpap.product_name }}</h3>
-            <p style="margin: 4px 0; color: #6A6D70;">고객사: {{ selectedPpap.customer }}</p>
+            <p style="margin: 4px 0; color: #6A6D70;">고객사: {{ selectedPpap.customer_name }}</p>
           </div>
         </div>
       </div>
@@ -69,10 +69,10 @@
       <div class="card">
         <div class="card-title">관련 문서 연계</div>
         <el-descriptions :column="4" border>
-          <el-descriptions-item label="FMEA">{{ selectedPpap.fmea_ref || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="관리계획서">{{ selectedPpap.cp_ref || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="MSA">{{ selectedPpap.msa_ref || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="APQP">{{ selectedPpap.apqp_ref || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="FMEA">{{ selectedPpap.fmea_id || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="관리계획서">{{ selectedPpap.cp_id || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="MSA">{{ selectedPpap.msa_id || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="APQP">{{ selectedPpap.apqp_id || '-' }}</el-descriptions-item>
         </el-descriptions>
       </div>
 
@@ -95,13 +95,13 @@
         </el-form-item>
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="제품명" required>
-              <el-input v-model="ppapForm.product_name" />
+            <el-form-item label="제품 ID" required>
+              <el-input v-model="ppapForm.product_id" placeholder="P001" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="고객사" required>
-              <el-input v-model="ppapForm.customer" />
+            <el-form-item label="고객 ID">
+              <el-input v-model="ppapForm.customer_id" placeholder="C001" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -114,30 +114,6 @@
             <el-radio-button :value="5">Level 5</el-radio-button>
           </el-radio-group>
         </el-form-item>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="FMEA 연계">
-              <el-input v-model="ppapForm.fmea_ref" placeholder="FMEA 번호" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="관리계획서 연계">
-              <el-input v-model="ppapForm.cp_ref" placeholder="CP 번호" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="MSA 연계">
-              <el-input v-model="ppapForm.msa_ref" placeholder="MSA 번호" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="APQP 연계">
-              <el-input v-model="ppapForm.apqp_ref" placeholder="APQP 번호" />
-            </el-form-item>
-          </el-col>
-        </el-row>
       </el-form>
       <template #footer>
         <el-button @click="showCreateDialog = false">취소</el-button>
@@ -165,13 +141,9 @@ const checklistElements = ref<any[]>([])
 
 const ppapForm = ref({
   ppap_no: '',
-  product_name: '',
-  customer: '',
+  product_id: '',
+  customer_id: '',
   submission_level: 3,
-  fmea_ref: '',
-  cp_ref: '',
-  msa_ref: '',
-  apqp_ref: ''
 })
 
 function getPpapStatusType(status: string): '' | 'success' | 'warning' | 'danger' | 'info' {
@@ -215,18 +187,24 @@ async function loadPpapList() {
 async function selectPpap(row: any) {
   selectedPpap.value = row
   try {
-    const res = await ppapApi.getChecklist(row.id)
-    checklistElements.value = res.data
+    const res = await ppapApi.getChecklist(row.ppap_id)
+    const elements = res.data.elements || res.data || []
+    checklistElements.value = Array.isArray(elements) ? elements.map((e: any) => ({
+      ...e,
+      is_required: e.is_required === 1 || e.is_required === true
+    })) : []
   } catch {
-    // Use default checklist
     checklistElements.value = []
   }
 }
 
 async function handleChecklistChange(element: any) {
-  if (!selectedPpap.value) return
+  if (!selectedPpap.value || !element.element_id) return
   try {
-    await ppapApi.updateChecklistItem(selectedPpap.value.id, element.element_no, element)
+    await ppapApi.updateChecklistItem(element.element_id, {
+      status: element.status,
+      document_ref: element.document_ref
+    })
   } catch {
     // silent
   }
@@ -235,14 +213,14 @@ async function handleChecklistChange(element: any) {
 async function deletePpap(row: any) {
   try {
     await ElMessageBox.confirm(`"${row.ppap_no}"을(를) 삭제하시겠습니까?`, '삭제 확인', { type: 'warning' })
-    await ppapApi.delete(row.id)
+    await ppapApi.delete(row.ppap_id)
     ElMessage.success('삭제되었습니다.')
     loadPpapList()
   } catch { /* cancelled */ }
 }
 
 async function createPpap() {
-  if (!ppapForm.value.ppap_no || !ppapForm.value.product_name || !ppapForm.value.customer) {
+  if (!ppapForm.value.ppap_no || !ppapForm.value.product_id) {
     ElMessage.warning('필수항목을 입력하세요.')
     return
   }
@@ -250,7 +228,7 @@ async function createPpap() {
     await ppapApi.create(ppapForm.value)
     ElMessage.success('PPAP가 생성되었습니다.')
     showCreateDialog.value = false
-    ppapForm.value = { ppap_no: '', product_name: '', customer: '', submission_level: 3, fmea_ref: '', cp_ref: '', msa_ref: '', apqp_ref: '' }
+    ppapForm.value = { ppap_no: '', product_id: '', customer_id: '', submission_level: 3 }
     loadPpapList()
   } catch {
     ElMessage.error('생성에 실패했습니다.')

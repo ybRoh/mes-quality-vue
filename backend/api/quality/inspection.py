@@ -40,9 +40,16 @@ def list_inspection_specs(
     total = query.count()
     specs = query.order_by(InspectionSpec.spec_id).offset((page - 1) * size).limit(size).all()
 
+    # Batch load products
+    spec_product_ids = list(set(s.product_id for s in specs if s.product_id))
+    spec_products_map = {}
+    if spec_product_ids:
+        spec_products = db.query(Product).filter(Product.product_id.in_(spec_product_ids)).all()
+        spec_products_map = {p.product_id: p for p in spec_products}
+
     items = []
     for s in specs:
-        product = db.query(Product).filter(Product.product_id == s.product_id).first() if s.product_id else None
+        product = spec_products_map.get(s.product_id)
         items.append({
             "spec_id": s.spec_id,
             "product_id": s.product_id,
@@ -117,10 +124,23 @@ def list_inspections(
     total = query.count()
     inspections = query.order_by(Inspection.insp_date.desc()).offset((page - 1) * size).limit(size).all()
 
+    # Batch load related entities to avoid N+1 queries
+    product_ids = list(set(i.product_id for i in inspections if i.product_id))
+    products_map = {}
+    if product_ids:
+        products = db.query(Product).filter(Product.product_id.in_(product_ids)).all()
+        products_map = {p.product_id: p for p in products}
+
+    inspector_ids = list(set(i.inspector_id for i in inspections if i.inspector_id))
+    inspectors_map = {}
+    if inspector_ids:
+        inspectors = db.query(Worker).filter(Worker.worker_id.in_(inspector_ids)).all()
+        inspectors_map = {w.worker_id: w for w in inspectors}
+
     items = []
     for insp in inspections:
-        product = db.query(Product).filter(Product.product_id == insp.product_id).first() if insp.product_id else None
-        inspector = db.query(Worker).filter(Worker.worker_id == insp.inspector_id).first() if insp.inspector_id else None
+        product = products_map.get(insp.product_id)
+        inspector = inspectors_map.get(insp.inspector_id)
         items.append({
             "insp_id": insp.insp_id,
             "lot_no": insp.lot_no,
@@ -152,11 +172,17 @@ def get_inspection(
 
     product = db.query(Product).filter(Product.product_id == insp.product_id).first() if insp.product_id else None
 
-    # 측정값 조회
+    # 측정값 조회 (batch load specs)
     values = db.query(InspectionValue).filter(InspectionValue.insp_id == insp_id).all()
+    val_spec_ids = list(set(v.spec_id for v in values if v.spec_id))
+    val_specs_map = {}
+    if val_spec_ids:
+        val_specs = db.query(InspectionSpec).filter(InspectionSpec.spec_id.in_(val_spec_ids)).all()
+        val_specs_map = {s.spec_id: s for s in val_specs}
+
     value_list = []
     for v in values:
-        spec = db.query(InspectionSpec).filter(InspectionSpec.spec_id == v.spec_id).first() if v.spec_id else None
+        spec = val_specs_map.get(v.spec_id)
         value_list.append({
             "value_id": v.value_id,
             "spec_id": v.spec_id,
