@@ -1,0 +1,136 @@
+:root {
+  --fiori-shell: #354A5F;
+  --fiori-blue: #0A6ED1;
+  --fiori-green: #107E3E;
+  --fiori-orange: #E9730C;
+  --fiori-red: #BB0000;
+  --fiori-bg: #F7F7F7;
+  --fiori-white: #FFFFFF;
+  --fiori-border: #E5E5E5;
+  --fiori-text: #32363A;
+  --fiori-text-light: #6A6D70;
+  --fiori-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  --fiori-shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --fiori-radius: 8px;
+  --fiori-font: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* SAP Fiori 기본 색상 */
+  --qms-primary: #0A6ED1;
+  --qms-primary-dark: #354A5F;
+  --qms-success: #107E3E;
+  --qms-warning: #E9730C;
+  --qms-danger: #BB0000;
+
+  /* 텍스트 */
+  --qms-text-primary: #32363A;
+  --qms-text-secondary: #6A6D70;
+
+  /* 배경 */
+  --qms-bg-white: #FFFFFF;
+  --qms-bg-light: #F7F7F7;
+  --qms-bg-sidebar: #354A5F;
+
+  /* 라인/보더 */
+  --qms-border: #E5E5E5;
+
+  /* 차트 색상 팔레트 */
+  --qms-chart-1: #0A6ED1;
+  --qms-chart-2: #107E3E;
+  --qms-chart-3: #E9730C;
+  --qms-chart-4: #BB0000;
+  --qms-chart-5: #1B90FF;
+  --qms-chart-6: #61A656;
+  --qms-chart-7: #C87B23;
+  --qms-chart-8: #8B47D0;
+  --qms-chart-9: #DB1F77;
+  --qms-chart-10: #0F828F;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  font-family: var(--fiori-font);
+  font-size: 14px;
+  color: var(--fiori-text);
+  background-color: var(--fiori-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  text-decoration: none;
+  color: var(--fiori-blue);
+}
+
+.page-container {
+  padding: 20px;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--fiori-text);
+  margin-bottom: 20px;
+}
+
+.card {
+  background: var(--fiori-white);
+  border-radius: var(--fiori-radius);
+  box-shadow: var(--fiori-shadow);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--fiori-text);
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--fiori-border);
+}
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.chart-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+/* Element Plus overrides */
+.el-menu {
+  border-right: none !important;
+}
+
+.el-table {
+  font-size: 13px;
+}
+
+.el-button {
+  font-family: var(--fiori-font);
+}
+
+.el-dialog__title {
+  font-weight: 500;
+}
