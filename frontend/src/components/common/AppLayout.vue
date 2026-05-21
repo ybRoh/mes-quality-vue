@@ -223,6 +223,12 @@
           </el-menu-item>
         </el-sub-menu>
 
+        <!-- Q&A -->
+        <el-menu-item index="/quality/qna">
+          <el-icon><ChatSquare /></el-icon>
+          <template #title>Q&A</template>
+        </el-menu-item>
+
       </el-menu>
     </el-aside>
 
@@ -302,7 +308,8 @@ import {
   ChatLineSquare,
   UserFilled,
   EditPen,
-  DataLine
+  DataLine,
+  ChatSquare
 } from '@element-plus/icons-vue'
 
 const authStore = useAuthStore()

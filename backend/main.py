@@ -67,6 +67,7 @@ from api.quality.training import router as training_router
 from api.quality.specification_mgmt import router as specification_router
 from api.quality.customer_audit import router as customer_audit_router
 from api.quality.kpi import router as kpi_router
+from api.quality.qna import router as qna_router
 
 # 기준정보
 from api.master.product import router as product_router
@@ -99,6 +100,7 @@ app.include_router(training_router)
 app.include_router(specification_router)
 app.include_router(customer_audit_router)
 app.include_router(kpi_router)
+app.include_router(qna_router)
 
 # 기준정보
 app.include_router(product_router)

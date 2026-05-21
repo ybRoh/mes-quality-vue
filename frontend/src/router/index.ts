@@ -176,6 +176,13 @@ const routes: RouteRecordRaw[] = [
         path: 'quality/risk-issue',
         name: 'RiskIssue',
         component: () => import('@/views/quality/RiskIssueView.vue')
+      },
+      // Q&A
+      {
+        path: 'quality/qna',
+        name: 'QnA',
+        component: () => import('@/views/quality/QnaView.vue'),
+        meta: { title: 'Q&A' },
       }
     ]
   },

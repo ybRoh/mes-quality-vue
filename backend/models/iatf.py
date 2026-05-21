@@ -833,3 +833,30 @@ class QmsRiskIssue(QmsBase):
 
     def __repr__(self):
         return f"<QmsRiskIssue(issue_id={self.issue_id}, issue_no='{self.issue_no}')>"
+
+
+# ============================================================
+# Q&A (질문/답변)
+# ============================================================
+
+class QmsQna(QmsBase):
+    """Q&A 질문/답변"""
+    __tablename__ = "qms_qna"
+
+    qna_id = Column(Integer, primary_key=True, autoincrement=True)
+    title = Column(String(300), nullable=False)
+    question = Column(Text, nullable=False)
+    answer = Column(Text, nullable=True)
+    category = Column(String(50), default="GENERAL")  # GENERAL/QUALITY/PROCESS/EQUIPMENT/SPEC/OTHER
+    author_id = Column(String(50), nullable=False)
+    author_name = Column(String(100), nullable=True)
+    status = Column(String(20), default="OPEN")  # OPEN/ANSWERED/CLOSED
+    is_public = Column(Boolean, default=True)
+    view_count = Column(Integer, default=0)
+    answered_by = Column(String(50), nullable=True)
+    answered_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    def __repr__(self):
+        return f"<QmsQna(qna_id={self.qna_id}, title='{self.title}')>"
