@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from api.deps import get_db, get_current_user
+from api.quality.utils import escape_like
 from config import settings
 from models.existing import SysUser, Worker
 from schemas.common import PagedResponse
@@ -32,8 +33,8 @@ def list_workers(
         query = query.filter(Worker.is_active == is_active)
     if search:
         query = query.filter(
-            (Worker.worker_id.contains(search)) |
-            (Worker.worker_name.contains(search))
+            (Worker.worker_id.ilike(f"%{escape_like(search)}%")) |
+            (Worker.worker_name.ilike(f"%{escape_like(search)}%"))
         )
 
     total = query.count()

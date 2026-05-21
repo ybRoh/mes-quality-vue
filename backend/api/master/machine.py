@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from api.deps import get_db, get_current_user
+from api.quality.utils import escape_like
 from config import settings
 from models.existing import SysUser, Machine, Line, Factory
 from schemas.common import PagedResponse
@@ -35,8 +36,8 @@ def list_machines(
         query = query.filter(Machine.is_active == is_active)
     if search:
         query = query.filter(
-            (Machine.machine_id.contains(search)) |
-            (Machine.machine_name.contains(search))
+            (Machine.machine_id.ilike(f"%{escape_like(search)}%")) |
+            (Machine.machine_name.ilike(f"%{escape_like(search)}%"))
         )
 
     total = query.count()

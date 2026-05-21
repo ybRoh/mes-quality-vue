@@ -216,6 +216,7 @@ def update_claim_d4(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
+        old_value = getattr(claim, key, None)
         setattr(claim, key, value)
 
     log_update(db, current_user.user_id, "claim", claim_id, "d4", None, None, "D4 원인분석 업데이트")
@@ -243,6 +244,7 @@ def update_claim_d5(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
+        old_value = getattr(claim, key, None)
         setattr(claim, key, value)
 
     log_update(db, current_user.user_id, "claim", claim_id, "d5", None, None, "D5 시정조치 업데이트")
@@ -270,6 +272,7 @@ def update_claim_d6(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
+        old_value = getattr(claim, key, None)
         setattr(claim, key, value)
 
     log_update(db, current_user.user_id, "claim", claim_id, "d6", None, None, "D6 유효성검증 업데이트")
@@ -297,6 +300,7 @@ def update_claim_d7(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
+        old_value = getattr(claim, key, None)
         setattr(claim, key, value)
 
     log_update(db, current_user.user_id, "claim", claim_id, "d7", None, None, "D7 수평전개 업데이트")
@@ -324,6 +328,7 @@ def update_claim_d8(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
+        old_value = getattr(claim, key, None)
         setattr(claim, key, value)
 
     log_update(db, current_user.user_id, "claim", claim_id, "d8", None, None, "D8 완료 업데이트")

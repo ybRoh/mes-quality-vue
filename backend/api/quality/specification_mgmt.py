@@ -95,7 +95,7 @@ def update_si_faq(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(faq, key)
+        old_value = getattr(faq, key, None)
         setattr(faq, key, value)
         log_update(db, current_user.user_id, "qms_si_faq", str(faq.faq_id), key, old_value, value)
 
@@ -204,7 +204,7 @@ def update_csr(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(csr, key)
+        old_value = getattr(csr, key, None)
         setattr(csr, key, value)
         log_update(db, current_user.user_id, "qms_csr", csr.csr_no, key, old_value, value)
 
@@ -333,7 +333,7 @@ def update_specification(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(spec, key)
+        old_value = getattr(spec, key, None)
         setattr(spec, key, value)
         log_update(db, current_user.user_id, "qms_specification", spec.spec_no, key, old_value, value)
 

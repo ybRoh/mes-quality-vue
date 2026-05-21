@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from api.deps import get_db, get_current_user
+from api.quality.utils import escape_like
 from config import settings
 from models.existing import SysUser, Customer
 from schemas.common import PagedResponse
@@ -32,8 +33,8 @@ def list_customers(
         query = query.filter(Customer.is_active == is_active)
     if search:
         query = query.filter(
-            (Customer.customer_id.contains(search)) |
-            (Customer.customer_name.contains(search))
+            (Customer.customer_id.ilike(f"%{escape_like(search)}%")) |
+            (Customer.customer_name.ilike(f"%{escape_like(search)}%"))
         )
 
     total = query.count()

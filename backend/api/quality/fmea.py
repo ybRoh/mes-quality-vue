@@ -178,7 +178,7 @@ def update_fmea(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(fmea, key)
+        old_value = getattr(fmea, key, None)
         setattr(fmea, key, value)
         log_update(db, current_user.user_id, "qms_fmea", fmea.fmea_no, key, old_value, value)
 

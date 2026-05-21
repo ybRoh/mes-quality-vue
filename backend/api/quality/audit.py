@@ -105,7 +105,7 @@ def update_requirement(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(req, key)
+        old_value = getattr(req, key, None)
         setattr(req, key, value)
         log_update(db, current_user.user_id, "qms_audit_requirement", req.req_no, key, old_value, value)
 
@@ -231,7 +231,7 @@ def update_plan(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(plan, key)
+        old_value = getattr(plan, key, None)
         setattr(plan, key, value)
         log_update(db, current_user.user_id, "qms_audit_plan", plan.plan_no, key, old_value, value)
 
@@ -412,7 +412,7 @@ def update_finding(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(finding, key)
+        old_value = getattr(finding, key, None)
         setattr(finding, key, value)
         log_update(db, current_user.user_id, "qms_audit_finding", finding.finding_no, key, old_value, value)
 
@@ -591,7 +591,7 @@ def update_action(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(action, key)
+        old_value = getattr(action, key, None)
         setattr(action, key, value)
         log_update(db, current_user.user_id, "qms_corrective_action", action.action_no, key, old_value, value)
 

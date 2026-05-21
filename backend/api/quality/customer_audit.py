@@ -108,7 +108,7 @@ def update_finding(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(finding, key)
+        old_value = getattr(finding, key, None)
         setattr(finding, key, value)
         log_update(db, current_user.user_id, "qms_customer_audit_finding", finding.finding_no, key, old_value, value)
 
@@ -220,7 +220,7 @@ def update_action(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(action, key)
+        old_value = getattr(action, key, None)
         setattr(action, key, value)
         log_update(db, current_user.user_id, "qms_customer_audit_action", action.action_no, key, old_value, value)
 
@@ -469,7 +469,7 @@ def update_audit(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(audit, key)
+        old_value = getattr(audit, key, None)
         setattr(audit, key, value)
         log_update(db, current_user.user_id, "qms_customer_audit", audit.audit_no, key, old_value, value)
 

@@ -162,7 +162,7 @@ def update_definition(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(kpi, key)
+        old_value = getattr(kpi, key, None)
         setattr(kpi, key, value)
         log_update(db, current_user.user_id, "qms_kpi_definition", kpi.kpi_no, key, old_value, value)
 
@@ -410,7 +410,7 @@ def update_monitor(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(monitor, key)
+        old_value = getattr(monitor, key, None)
         setattr(monitor, key, value)
         log_update(db, current_user.user_id, "qms_process_monitor", monitor.process_name, key, old_value, value)
 
@@ -547,7 +547,7 @@ def update_risk(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(risk, key)
+        old_value = getattr(risk, key, None)
         setattr(risk, key, value)
         log_update(db, current_user.user_id, "qms_risk_issue", risk.issue_no, key, old_value, value)
 

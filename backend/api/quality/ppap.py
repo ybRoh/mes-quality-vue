@@ -247,7 +247,7 @@ def update_ppap(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(ppap, key)
+        old_value = getattr(ppap, key, None)
         setattr(ppap, key, value)
         log_update(db, current_user.user_id, "qms_ppap", ppap.ppap_no, key, old_value, value)
 

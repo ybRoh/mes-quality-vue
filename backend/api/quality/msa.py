@@ -190,7 +190,7 @@ def update_msa_study(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(study, key)
+        old_value = getattr(study, key, None)
         setattr(study, key, value)
         log_update(db, current_user.user_id, "qms_msa_study", study.msa_no, key, old_value, value)
 

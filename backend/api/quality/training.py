@@ -131,7 +131,7 @@ def update_course(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(course, key)
+        old_value = getattr(course, key, None)
         setattr(course, key, value)
         log_update(db, current_user.user_id, "qms_training_course", course.course_no, key, old_value, value)
 
@@ -301,7 +301,7 @@ def update_record(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(record, key)
+        old_value = getattr(record, key, None)
         setattr(record, key, value)
         log_update(db, current_user.user_id, "qms_training_record", str(record_id), key, old_value, value)
 
@@ -469,7 +469,7 @@ def update_qualification(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(qual, key)
+        old_value = getattr(qual, key, None)
         setattr(qual, key, value)
         log_update(db, current_user.user_id, "qms_qualification", str(qual_id), key, old_value, value)
 
@@ -610,7 +610,7 @@ def update_competency(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(matrix, key)
+        old_value = getattr(matrix, key, None)
         setattr(matrix, key, value)
         log_update(db, current_user.user_id, "qms_competency_matrix", str(matrix_id), key, old_value, value)
 
@@ -764,7 +764,7 @@ def update_qual_audit(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(audit, key)
+        old_value = getattr(audit, key, None)
         setattr(audit, key, value)
         log_update(db, current_user.user_id, "qms_qual_audit", str(qual_audit_id), key, old_value, value)
 

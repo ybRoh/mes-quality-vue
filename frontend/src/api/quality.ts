@@ -29,11 +29,11 @@ export const fmeaApi = {
     return client.get(`/quality/fmea/${id}`)
   },
 
-  create(data: any) {
+  create(data: Record<string, unknown>) {
     return client.post('/quality/fmea/', data)
   },
 
-  update(id: number, data: any) {
+  update(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/fmea/${id}`, data)
   },
 
@@ -45,11 +45,11 @@ export const fmeaApi = {
     return client.get(`/quality/fmea/${fmeaId}/items`)
   },
 
-  createItem(fmeaId: number, data: any) {
+  createItem(fmeaId: number, data: Record<string, unknown>) {
     return client.post(`/quality/fmea/${fmeaId}/items`, data)
   },
 
-  updateItem(_fmeaId: number, itemId: number, data: any) {
+  updateItem(_fmeaId: number, itemId: number, data: Record<string, unknown>) {
     return client.put(`/quality/fmea/items/${itemId}`, data)
   },
 
@@ -72,11 +72,11 @@ export const controlPlanApi = {
     return client.get(`/quality/control-plan/${id}`)
   },
 
-  create(data: any) {
+  create(data: Record<string, unknown>) {
     return client.post('/quality/control-plan/', data)
   },
 
-  update(id: number, data: any) {
+  update(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/control-plan/${id}`, data)
   },
 
@@ -88,11 +88,11 @@ export const controlPlanApi = {
     return client.get(`/quality/control-plan/${cpId}/items`)
   },
 
-  createItem(cpId: number, data: any) {
+  createItem(cpId: number, data: Record<string, unknown>) {
     return client.post(`/quality/control-plan/${cpId}/items`, data)
   },
 
-  updateItem(_cpId: number, itemId: number, data: any) {
+  updateItem(_cpId: number, itemId: number, data: Record<string, unknown>) {
     return client.put(`/quality/control-plan/items/${itemId}`, data)
   },
 
@@ -111,11 +111,11 @@ export const msaApi = {
     return client.get(`/quality/msa/${id}`)
   },
 
-  create(data: any) {
+  create(data: Record<string, unknown>) {
     return client.post('/quality/msa/', data)
   },
 
-  update(id: number, data: any) {
+  update(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/msa/${id}`, data)
   },
 
@@ -123,7 +123,7 @@ export const msaApi = {
     return client.delete(`/quality/msa/${id}`)
   },
 
-  saveMeasurements(studyId: number, data: any[]) {
+  saveMeasurements(studyId: number, data: Record<string, unknown>[]) {
     return client.post(`/quality/msa/${studyId}/measurements`, { measurements: data })
   },
 
@@ -146,11 +146,11 @@ export const ppapApi = {
     return client.get(`/quality/ppap/${id}`)
   },
 
-  create(data: any) {
+  create(data: Record<string, unknown>) {
     return client.post('/quality/ppap/', data)
   },
 
-  update(id: number, data: any) {
+  update(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/ppap/${id}`, data)
   },
 
@@ -162,7 +162,7 @@ export const ppapApi = {
     return client.get(`/quality/ppap/${ppapId}/elements`)
   },
 
-  updateChecklistItem(elementId: number, data: any) {
+  updateChecklistItem(elementId: number, data: Record<string, unknown>) {
     return client.put(`/quality/ppap/elements/${elementId}`, data)
   }
 }
@@ -177,11 +177,11 @@ export const apqpApi = {
     return client.get(`/quality/apqp/${id}`)
   },
 
-  create(data: any) {
+  create(data: Record<string, unknown>) {
     return client.post('/quality/apqp/', data)
   },
 
-  update(id: number, data: any) {
+  update(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/apqp/${id}`, data)
   },
 
@@ -193,7 +193,7 @@ export const apqpApi = {
     return client.get(`/quality/apqp/${apqpId}/phases`)
   },
 
-  updatePhase(phaseId: number, data: any) {
+  updatePhase(phaseId: number, data: Record<string, unknown>) {
     return client.put(`/quality/apqp/phases/${phaseId}`, data)
   },
 
@@ -201,7 +201,7 @@ export const apqpApi = {
     return client.get(`/quality/apqp/phases/${phaseId}/deliverables`)
   },
 
-  updateDeliverable(deliverableId: number, data: any) {
+  updateDeliverable(deliverableId: number, data: Record<string, unknown>) {
     return client.put(`/quality/apqp/deliverables/${deliverableId}`, data)
   }
 }
@@ -216,11 +216,11 @@ export const claimApi = {
     return client.get(`/quality/claim/${id}`)
   },
 
-  create(data: any) {
+  create(data: Record<string, unknown>) {
     return client.post('/quality/claim/', data)
   },
 
-  update(id: string, data: any) {
+  update(id: string, data: Record<string, unknown>) {
     return client.put(`/quality/claim/${id}`, data)
   },
 
@@ -228,7 +228,7 @@ export const claimApi = {
     return client.delete(`/quality/claim/${id}`)
   },
 
-  updateStep(claimId: string, step: number, data: any) {
+  updateStep(claimId: string, step: number, data: Record<string, unknown>) {
     return client.put(`/quality/claim/${claimId}/d${step}`, data)
   }
 }
@@ -263,10 +263,10 @@ export const documentApi = {
   getById(id: number) {
     return client.get(`/quality/document/${id}`)
   },
-  create(data: any) {
+  create(data: Record<string, unknown>) {
     return client.post('/quality/document/', data)
   },
-  update(id: number, data: any) {
+  update(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/document/${id}`, data)
   },
   delete(id: number) {
@@ -281,7 +281,7 @@ export const documentApi = {
   getRevisions(docId: number) {
     return client.get(`/quality/document/${docId}/revisions`)
   },
-  createRevision(docId: number, data: any) {
+  createRevision(docId: number, data: Record<string, unknown>) {
     return client.post(`/quality/document/${docId}/revisions`, data)
   },
   getAttachments(docId: number) {
@@ -308,13 +308,13 @@ export const auditApi = {
   getRequirements(params?: { category?: string; is_active?: boolean; page?: number; size?: number }) {
     return client.get('/quality/audit/requirements', { params })
   },
-  createRequirement(data: any) {
+  createRequirement(data: Record<string, unknown>) {
     return client.post('/quality/audit/requirements', data)
   },
   getRequirement(id: number) {
     return client.get(`/quality/audit/requirements/${id}`)
   },
-  updateRequirement(id: number, data: any) {
+  updateRequirement(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/audit/requirements/${id}`, data)
   },
   deleteRequirement(id: number) {
@@ -324,13 +324,13 @@ export const auditApi = {
   getPlans(params?: { audit_year?: number; audit_type?: string; status?: string; page?: number; size?: number }) {
     return client.get('/quality/audit/plans', { params })
   },
-  createPlan(data: any) {
+  createPlan(data: Record<string, unknown>) {
     return client.post('/quality/audit/plans', data)
   },
   getPlan(id: number) {
     return client.get(`/quality/audit/plans/${id}`)
   },
-  updatePlan(id: number, data: any) {
+  updatePlan(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/audit/plans/${id}`, data)
   },
   deletePlan(id: number) {
@@ -340,7 +340,7 @@ export const auditApi = {
   getPlanFindings(planId: number) {
     return client.get(`/quality/audit/plans/${planId}/findings`)
   },
-  createFinding(planId: number, data: any) {
+  createFinding(planId: number, data: Record<string, unknown>) {
     return client.post(`/quality/audit/plans/${planId}/findings`, data)
   },
   getFindings(params?: { finding_type?: string; status?: string; page?: number; size?: number }) {
@@ -349,7 +349,7 @@ export const auditApi = {
   getFinding(id: number) {
     return client.get(`/quality/audit/findings/${id}`)
   },
-  updateFinding(id: number, data: any) {
+  updateFinding(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/audit/findings/${id}`, data)
   },
   deleteFinding(id: number) {
@@ -359,7 +359,7 @@ export const auditApi = {
   getFindingActions(findingId: number) {
     return client.get(`/quality/audit/findings/${findingId}/actions`)
   },
-  createAction(findingId: number, data: any) {
+  createAction(findingId: number, data: Record<string, unknown>) {
     return client.post(`/quality/audit/findings/${findingId}/actions`, data)
   },
   getActions(params?: { status?: string; overdue_only?: boolean; page?: number; size?: number }) {
@@ -368,7 +368,7 @@ export const auditApi = {
   getAction(id: number) {
     return client.get(`/quality/audit/actions/${id}`)
   },
-  updateAction(id: number, data: any) {
+  updateAction(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/audit/actions/${id}`, data)
   },
   deleteAction(id: number) {
@@ -389,13 +389,13 @@ export const trainingApi = {
   getCourses(params?: { category?: string; training_type?: string; is_active?: boolean; page?: number; size?: number }) {
     return client.get('/quality/training/courses', { params })
   },
-  createCourse(data: any) {
+  createCourse(data: Record<string, unknown>) {
     return client.post('/quality/training/courses', data)
   },
   getCourse(id: number) {
     return client.get(`/quality/training/courses/${id}`)
   },
-  updateCourse(id: number, data: any) {
+  updateCourse(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/training/courses/${id}`, data)
   },
   deleteCourse(id: number) {
@@ -405,13 +405,13 @@ export const trainingApi = {
   getRecords(params?: { course_id?: number; trainee_id?: string; result?: string; page?: number; size?: number }) {
     return client.get('/quality/training/records', { params })
   },
-  createRecord(data: any) {
+  createRecord(data: Record<string, unknown>) {
     return client.post('/quality/training/records', data)
   },
-  bulkCreateRecords(data: any) {
+  bulkCreateRecords(data: Record<string, unknown>) {
     return client.post('/quality/training/records/bulk', data)
   },
-  updateRecord(id: number, data: any) {
+  updateRecord(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/training/records/${id}`, data)
   },
   deleteRecord(id: number) {
@@ -424,13 +424,13 @@ export const trainingApi = {
   getQualifications(params?: { qual_type?: string; holder_id?: string; status?: string; page?: number; size?: number }) {
     return client.get('/quality/training/qualifications', { params })
   },
-  createQualification(data: any) {
+  createQualification(data: Record<string, unknown>) {
     return client.post('/quality/training/qualifications', data)
   },
   getQualification(id: number) {
     return client.get(`/quality/training/qualifications/${id}`)
   },
-  updateQualification(id: number, data: any) {
+  updateQualification(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/training/qualifications/${id}`, data)
   },
   deleteQualification(id: number) {
@@ -443,10 +443,10 @@ export const trainingApi = {
   getCompetency(params?: { employee_id?: string; skill_name?: string; page?: number; size?: number }) {
     return client.get('/quality/training/competency', { params })
   },
-  createCompetency(data: any) {
+  createCompetency(data: Record<string, unknown>) {
     return client.post('/quality/training/competency', data)
   },
-  updateCompetency(id: number, data: any) {
+  updateCompetency(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/training/competency/${id}`, data)
   },
   deleteCompetency(id: number) {
@@ -459,10 +459,10 @@ export const trainingApi = {
   getQualAudits(params?: { qual_id?: number; result?: string; page?: number; size?: number }) {
     return client.get('/quality/training/qual-audits', { params })
   },
-  createQualAudit(data: any) {
+  createQualAudit(data: Record<string, unknown>) {
     return client.post('/quality/training/qual-audits', data)
   },
-  updateQualAudit(id: number, data: any) {
+  updateQualAudit(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/training/qual-audits/${id}`, data)
   },
   deleteQualAudit(id: number) {
@@ -479,10 +479,10 @@ export const specificationApi = {
   getById(id: number) {
     return client.get(`/quality/specification/${id}`)
   },
-  create(data: any) {
+  create(data: Record<string, unknown>) {
     return client.post('/quality/specification/', data)
   },
-  update(id: number, data: any) {
+  update(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/specification/${id}`, data)
   },
   delete(id: number) {
@@ -492,17 +492,17 @@ export const specificationApi = {
   getDrawings(specId: number) {
     return client.get(`/quality/specification/${specId}/drawings`)
   },
-  createDrawing(specId: number, data: any) {
+  createDrawing(specId: number, data: Record<string, unknown>) {
     return client.post(`/quality/specification/${specId}/drawings`, data)
   },
   // SI FAQ
   getSiFaq(params?: { customer_id?: string; category?: string; is_active?: boolean; page?: number; size?: number }) {
     return client.get('/quality/specification/si-faq', { params })
   },
-  createSiFaq(data: any) {
+  createSiFaq(data: Record<string, unknown>) {
     return client.post('/quality/specification/si-faq', data)
   },
-  updateSiFaq(id: number, data: any) {
+  updateSiFaq(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/specification/si-faq/${id}`, data)
   },
   deleteSiFaq(id: number) {
@@ -515,10 +515,10 @@ export const specificationApi = {
   getCsrById(id: number) {
     return client.get(`/quality/specification/csr/${id}`)
   },
-  createCsr(data: any) {
+  createCsr(data: Record<string, unknown>) {
     return client.post('/quality/specification/csr', data)
   },
-  updateCsr(id: number, data: any) {
+  updateCsr(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/specification/csr/${id}`, data)
   },
   deleteCsr(id: number) {
@@ -535,10 +535,10 @@ export const customerAuditApi = {
   getById(id: number) {
     return client.get(`/quality/customer-audit/${id}`)
   },
-  create(data: any) {
+  create(data: Record<string, unknown>) {
     return client.post('/quality/customer-audit/', data)
   },
-  update(id: number, data: any) {
+  update(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/customer-audit/${id}`, data)
   },
   delete(id: number) {
@@ -548,7 +548,7 @@ export const customerAuditApi = {
   getAuditFindings(auditId: number) {
     return client.get(`/quality/customer-audit/${auditId}/findings`)
   },
-  createFinding(auditId: number, data: any) {
+  createFinding(auditId: number, data: Record<string, unknown>) {
     return client.post(`/quality/customer-audit/${auditId}/findings`, data)
   },
   getFindings(params?: { finding_type?: string; status?: string; page?: number; size?: number }) {
@@ -557,7 +557,7 @@ export const customerAuditApi = {
   getFinding(id: number) {
     return client.get(`/quality/customer-audit/findings/${id}`)
   },
-  updateFinding(id: number, data: any) {
+  updateFinding(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/customer-audit/findings/${id}`, data)
   },
   deleteFinding(id: number) {
@@ -567,7 +567,7 @@ export const customerAuditApi = {
   getFindingActions(findingId: number) {
     return client.get(`/quality/customer-audit/findings/${findingId}/actions`)
   },
-  createAction(findingId: number, data: any) {
+  createAction(findingId: number, data: Record<string, unknown>) {
     return client.post(`/quality/customer-audit/findings/${findingId}/actions`, data)
   },
   getActions(params?: { status?: string; overdue_only?: boolean; page?: number; size?: number }) {
@@ -576,7 +576,7 @@ export const customerAuditApi = {
   getAction(id: number) {
     return client.get(`/quality/customer-audit/actions/${id}`)
   },
-  updateAction(id: number, data: any) {
+  updateAction(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/customer-audit/actions/${id}`, data)
   },
   deleteAction(id: number) {
@@ -600,10 +600,10 @@ export const kpiApi = {
   getDefinition(id: number) {
     return client.get(`/quality/kpi/definitions/${id}`)
   },
-  createDefinition(data: any) {
+  createDefinition(data: Record<string, unknown>) {
     return client.post('/quality/kpi/definitions', data)
   },
-  updateDefinition(id: number, data: any) {
+  updateDefinition(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/kpi/definitions/${id}`, data)
   },
   deleteDefinition(id: number) {
@@ -613,7 +613,7 @@ export const kpiApi = {
   getData(kpiId: number) {
     return client.get(`/quality/kpi/definitions/${kpiId}/data`)
   },
-  addData(kpiId: number, data: any) {
+  addData(kpiId: number, data: Record<string, unknown>) {
     return client.post(`/quality/kpi/definitions/${kpiId}/data`, data)
   },
   // 대시보드
@@ -627,10 +627,10 @@ export const kpiApi = {
   getMonitor(id: number) {
     return client.get(`/quality/kpi/monitors/${id}`)
   },
-  createMonitor(data: any) {
+  createMonitor(data: Record<string, unknown>) {
     return client.post('/quality/kpi/monitors', data)
   },
-  updateMonitor(id: number, data: any) {
+  updateMonitor(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/kpi/monitors/${id}`, data)
   },
   deleteMonitor(id: number) {
@@ -643,10 +643,10 @@ export const kpiApi = {
   getRisk(id: number) {
     return client.get(`/quality/kpi/risks/${id}`)
   },
-  createRisk(data: any) {
+  createRisk(data: Record<string, unknown>) {
     return client.post('/quality/kpi/risks', data)
   },
-  updateRisk(id: number, data: any) {
+  updateRisk(id: number, data: Record<string, unknown>) {
     return client.put(`/quality/kpi/risks/${id}`, data)
   },
   deleteRisk(id: number) {

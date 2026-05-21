@@ -1,5 +1,5 @@
 <template>
-  <div class="page-container">
+  <div class="page-container" v-loading="loading" element-loading-text="데이터를 불러오는 중...">
     <PageHeader title="대시보드" subtitle="품질관리 현황 요약" />
 
     <el-alert v-if="isStaleData" type="warning" :closable="false" style="margin-bottom: 8px;">
@@ -82,6 +82,7 @@ import { analysisApi } from '@/api/analysis'
 import { claimApi } from '@/api/quality'
 import dayjs from 'dayjs'
 
+const loading = ref(true)
 const isStaleData = ref(false)
 
 const kpi = ref({
@@ -130,15 +131,20 @@ function getClaimStatusLabel(status: string): string {
 }
 
 onMounted(async () => {
-  const results = await Promise.allSettled([
-    loadKpi(),
-    loadRecentProduction(),
-    loadDefectDistribution(),
-    loadOpenClaims()
-  ])
-  const failures = results.filter(r => r.status === 'rejected')
-  if (failures.length > 0) {
-    isStaleData.value = true
+  loading.value = true
+  try {
+    const results = await Promise.allSettled([
+      loadKpi(),
+      loadRecentProduction(),
+      loadDefectDistribution(),
+      loadOpenClaims()
+    ])
+    const failures = results.filter(r => r.status === 'rejected')
+    if (failures.length > 0) {
+      isStaleData.value = true
+    }
+  } finally {
+    loading.value = false
   }
 })
 

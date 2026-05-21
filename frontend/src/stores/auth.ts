@@ -41,6 +41,7 @@ export const useAuthStore = defineStore('auth', () => {
     userId.value = ''
     userName.value = ''
     role.value = ''
+    sessionChecked.value = false
 
     localStorage.removeItem('userId')
     localStorage.removeItem('userName')

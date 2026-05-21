@@ -220,7 +220,7 @@ def update_apqp_project(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(project, key)
+        old_value = getattr(project, key, None)
         setattr(project, key, value)
         log_update(db, current_user.user_id, "qms_apqp_project",
                    project.project_no or str(apqp_id), key, old_value, value)

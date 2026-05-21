@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from api.deps import get_db, get_current_user
+from api.quality.utils import escape_like
 from config import settings
 from models.existing import SysUser, Product, Customer
 from schemas.common import PagedResponse
@@ -35,8 +36,8 @@ def list_products(
         query = query.filter(Product.is_active == is_active)
     if search:
         query = query.filter(
-            (Product.product_id.contains(search)) |
-            (Product.product_name.contains(search))
+            (Product.product_id.ilike(f"%{escape_like(search)}%")) |
+            (Product.product_name.ilike(f"%{escape_like(search)}%"))
         )
 
     total = query.count()

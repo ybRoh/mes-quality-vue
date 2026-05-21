@@ -381,19 +381,27 @@ async function submitFmea() {
 
 async function saveFmeaItems(items: any[]) {
   if (!selectedFmea.value) return
-  try {
-    for (const item of items) {
-      if (item.item_id) {
-        await fmeaApi.updateItem(selectedFmea.value.fmea_id, item.item_id, item)
-      } else {
-        await fmeaApi.createItem(selectedFmea.value.fmea_id, item)
-      }
-    }
+  const fmeaId = selectedFmea.value.fmea_id
+
+  const results = await Promise.allSettled(
+    items.map(item =>
+      item.item_id
+        ? fmeaApi.updateItem(fmeaId, item.item_id, item)
+        : fmeaApi.createItem(fmeaId, item)
+    )
+  )
+
+  const succeeded = results.filter(r => r.status === 'fulfilled').length
+  const failed = results.filter(r => r.status === 'rejected').length
+
+  if (failed === 0) {
     ElMessage.success('FMEA 항목이 저장되었습니다.')
-    selectFmea(selectedFmea.value)
-  } catch {
-    ElMessage.error('저장에 실패했습니다.')
+  } else if (succeeded > 0) {
+    ElMessage.warning(`${items.length}건 중 ${succeeded}건 성공, ${failed}건 실패했습니다.`)
+  } else {
+    ElMessage.error('모든 항목 저장에 실패했습니다.')
   }
+  selectFmea(selectedFmea.value)
 }
 </script>
 

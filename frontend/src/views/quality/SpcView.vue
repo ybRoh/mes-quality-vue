@@ -182,14 +182,14 @@ async function loadSpcData() {
   if (!selectedSpec.value) return
   loading.value = true
 
-  try {
-    const [dataRes, capRes] = await Promise.all([
-      spcApi.getData({ spec_id: selectedSpec.value, sample_count: sampleCount.value }),
-      spcApi.getCapability(selectedSpec.value, sampleCount.value)
-    ])
+  const [dataResult, capResult] = await Promise.allSettled([
+    spcApi.getData({ spec_id: selectedSpec.value, sample_count: sampleCount.value }),
+    spcApi.getCapability(selectedSpec.value, sampleCount.value)
+  ])
 
+  if (dataResult.status === 'fulfilled') {
+    const dataRes = dataResult.value
     spcData.value = dataRes.data
-    capability.value = capRes.data.capability || capRes.data
 
     const rawValues = dataRes.data.values
     const values = Array.isArray(rawValues) ? rawValues : []
@@ -205,14 +205,21 @@ async function loadSpcData() {
       count: values.length,
       oocCount
     }
-  } catch (e) {
-    console.warn('SPC 데이터 조회 실패:', e)
-    ElMessage.error('SPC 데이터를 불러오는데 실패했습니다')
+  } else {
+    console.warn('SPC 데이터 조회 실패:', dataResult.reason)
+    ElMessage.error('SPC 측정 데이터를 불러오는데 실패했습니다')
     spcData.value = null
-    capability.value = { cp: 0, cpk: 0, pp: 0, ppk: 0 }
     stats.value = { mean: 0, std: 0, min: 0, max: 0, count: 0, oocCount: 0 }
-  } finally {
-    loading.value = false
   }
+
+  if (capResult.status === 'fulfilled') {
+    capability.value = capResult.value.data.capability || capResult.value.data
+  } else {
+    console.warn('공정능력 데이터 조회 실패:', capResult.reason)
+    ElMessage.error('공정능력 지수를 불러오는데 실패했습니다')
+    capability.value = { cp: 0, cpk: 0, pp: 0, ppk: 0 }
+  }
+
+  loading.value = false
 }
 </script>

@@ -22,63 +22,63 @@
       <!-- 공정단계 -->
       <el-table-column label="공정단계" width="130" fixed="left">
         <template #default="{ row }">
-          <el-input v-model="row.process_step" size="small" placeholder="공정단계" />
+          <el-input v-model="row.process_step" size="small" placeholder="공정단계" aria-label="공정단계" />
         </template>
       </el-table-column>
 
       <!-- 고장모드 -->
       <el-table-column label="잠재적 고장모드" width="160">
         <template #default="{ row }">
-          <el-input v-model="row.failure_mode" type="textarea" :autosize="{ minRows: 1, maxRows: 3 }" size="small" placeholder="고장모드" />
+          <el-input v-model="row.failure_mode" type="textarea" :autosize="{ minRows: 1, maxRows: 3 }" size="small" placeholder="고장모드" aria-label="잠재적 고장모드" />
         </template>
       </el-table-column>
 
       <!-- 고장영향 -->
       <el-table-column label="잠재적 고장영향" width="160">
         <template #default="{ row }">
-          <el-input v-model="row.failure_effect" type="textarea" :autosize="{ minRows: 1, maxRows: 3 }" size="small" placeholder="고장영향" />
+          <el-input v-model="row.failure_effect" type="textarea" :autosize="{ minRows: 1, maxRows: 3 }" size="small" placeholder="고장영향" aria-label="잠재적 고장영향" />
         </template>
       </el-table-column>
 
       <!-- 심각도 S -->
       <el-table-column label="심각도(S)" width="90" align="center">
         <template #default="{ row }">
-          <el-input-number v-model="row.severity" :min="1" :max="10" size="small" controls-position="right" @change="calculateRpn(row)" />
+          <el-input-number v-model="row.severity" :min="1" :max="10" size="small" controls-position="right" @change="calculateRpn(row)" aria-label="심각도(S)" />
         </template>
       </el-table-column>
 
       <!-- 고장원인 -->
       <el-table-column label="잠재적 고장원인" width="160">
         <template #default="{ row }">
-          <el-input v-model="row.failure_cause" type="textarea" :autosize="{ minRows: 1, maxRows: 3 }" size="small" placeholder="고장원인" />
+          <el-input v-model="row.failure_cause" type="textarea" :autosize="{ minRows: 1, maxRows: 3 }" size="small" placeholder="고장원인" aria-label="잠재적 고장원인" />
         </template>
       </el-table-column>
 
       <!-- 발생도 O -->
       <el-table-column label="발생도(O)" width="90" align="center">
         <template #default="{ row }">
-          <el-input-number v-model="row.occurrence" :min="1" :max="10" size="small" controls-position="right" @change="calculateRpn(row)" />
+          <el-input-number v-model="row.occurrence" :min="1" :max="10" size="small" controls-position="right" @change="calculateRpn(row)" aria-label="발생도(O)" />
         </template>
       </el-table-column>
 
       <!-- 현재관리방법 (예방) -->
       <el-table-column label="현재관리(예방)" width="150">
         <template #default="{ row }">
-          <el-input v-model="row.current_control_prevent" type="textarea" :autosize="{ minRows: 1, maxRows: 3 }" size="small" placeholder="예방관리" />
+          <el-input v-model="row.current_control_prevent" type="textarea" :autosize="{ minRows: 1, maxRows: 3 }" size="small" placeholder="예방관리" aria-label="현재관리(예방)" />
         </template>
       </el-table-column>
 
       <!-- 현재관리방법 (검출) -->
       <el-table-column label="현재관리(검출)" width="150">
         <template #default="{ row }">
-          <el-input v-model="row.current_control_detect" type="textarea" :autosize="{ minRows: 1, maxRows: 3 }" size="small" placeholder="검출관리" />
+          <el-input v-model="row.current_control_detect" type="textarea" :autosize="{ minRows: 1, maxRows: 3 }" size="small" placeholder="검출관리" aria-label="현재관리(검출)" />
         </template>
       </el-table-column>
 
       <!-- 검출도 D -->
       <el-table-column label="검출도(D)" width="90" align="center">
         <template #default="{ row }">
-          <el-input-number v-model="row.detection" :min="1" :max="10" size="small" controls-position="right" @change="calculateRpn(row)" />
+          <el-input-number v-model="row.detection" :min="1" :max="10" size="small" controls-position="right" @change="calculateRpn(row)" aria-label="검출도(D)" />
         </template>
       </el-table-column>
 
@@ -112,7 +112,7 @@
       <!-- 권고조치 -->
       <el-table-column label="권고조치사항" width="180" fixed="right">
         <template #default="{ row }">
-          <el-input v-model="row.recommended_action" type="textarea" :autosize="{ minRows: 1, maxRows: 3 }" size="small" placeholder="권고조치" />
+          <el-input v-model="row.recommended_action" type="textarea" :autosize="{ minRows: 1, maxRows: 3 }" size="small" placeholder="권고조치" aria-label="권고조치사항" />
         </template>
       </el-table-column>
 

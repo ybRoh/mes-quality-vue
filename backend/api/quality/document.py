@@ -236,7 +236,7 @@ def update_document(
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        old_value = getattr(doc, key)
+        old_value = getattr(doc, key, None)
         setattr(doc, key, value)
         log_update(db, current_user.user_id, "qms_document", doc.doc_no, key, old_value, value)
 
