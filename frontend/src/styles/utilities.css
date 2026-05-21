@@ -1,24 +1,2 @@
 /* Common layout utilities used across views */
-.filter-bar {
-  margin-bottom: 10px;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.kpi-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.kpi-row > * {
-  flex: 1;
-  min-width: 150px;
-}
-
-.page-container {
-  max-width: 100%;
-}
+/* NOTE: .filter-bar, .kpi-row, and .page-container are defined in variables.css (canonical source) */

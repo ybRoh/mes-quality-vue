@@ -150,6 +150,64 @@ def create_control_plan(
     return _build_cp_response(cp, db)
 
 
+# ── Control Plan 항목 (static-prefix routes before parameterized /{cp_id}) ──
+
+@router.put("/items/{cp_item_id}", response_model=ControlPlanItemResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
+def update_cp_item(
+    cp_item_id: int,
+    data: ControlPlanItemUpdate,
+    db: Session = Depends(get_db),
+    current_user: SysUser = Depends(get_current_user),
+):
+    """Control Plan 항목 수정"""
+    item = db.query(QmsControlPlanItem).filter(
+        QmsControlPlanItem.cp_item_id == cp_item_id
+    ).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="CP 항목을 찾을 수 없습니다")
+
+    update_data = data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(item, key, value)
+
+    log_update(db, current_user.user_id, "qms_control_plan_item", str(cp_item_id), "update", None, None, "CP 항목 수정")
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        logger.exception("DB commit failed")
+        raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
+    db.refresh(item)
+
+    return ControlPlanItemResponse.model_validate(item)
+
+
+@router.delete("/items/{cp_item_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
+def delete_cp_item(
+    cp_item_id: int,
+    db: Session = Depends(get_db),
+    current_user: SysUser = Depends(get_current_user),
+):
+    """Control Plan 항목 삭제"""
+    item = db.query(QmsControlPlanItem).filter(
+        QmsControlPlanItem.cp_item_id == cp_item_id
+    ).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="CP 항목을 찾을 수 없습니다")
+
+    log_delete(db, current_user.user_id, "qms_control_plan_item", str(cp_item_id), "CP 항목 삭제")
+    db.delete(item)
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        logger.exception("DB commit failed")
+        raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
+    return {"message": "CP 항목이 삭제되었습니다"}
+
+
+# ── Control Plan 헤더 (parameterized /{cp_id} routes) ──
+
 @router.get("/{cp_id}", response_model=ControlPlanResponse)
 def get_control_plan(
     cp_id: int,
@@ -217,8 +275,6 @@ def delete_control_plan(
     return {"message": "Control Plan이 삭제되었습니다"}
 
 
-# ── Control Plan 항목 ──
-
 @router.get("/{cp_id}/items", response_model=List[ControlPlanItemResponse])
 def list_cp_items(
     cp_id: int,
@@ -274,57 +330,3 @@ def create_cp_item(
     db.refresh(item)
 
     return ControlPlanItemResponse.model_validate(item)
-
-
-@router.put("/items/{cp_item_id}", response_model=ControlPlanItemResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
-def update_cp_item(
-    cp_item_id: int,
-    data: ControlPlanItemUpdate,
-    db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_user),
-):
-    """Control Plan 항목 수정"""
-    item = db.query(QmsControlPlanItem).filter(
-        QmsControlPlanItem.cp_item_id == cp_item_id
-    ).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="CP 항목을 찾을 수 없습니다")
-
-    update_data = data.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(item, key, value)
-
-    log_update(db, current_user.user_id, "qms_control_plan_item", str(cp_item_id), "update", None, None, "CP 항목 수정")
-    try:
-        db.commit()
-    except Exception:
-        db.rollback()
-        logger.exception("DB commit failed")
-        raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
-    db.refresh(item)
-
-    return ControlPlanItemResponse.model_validate(item)
-
-
-@router.delete("/items/{cp_item_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
-def delete_cp_item(
-    cp_item_id: int,
-    db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_user),
-):
-    """Control Plan 항목 삭제"""
-    item = db.query(QmsControlPlanItem).filter(
-        QmsControlPlanItem.cp_item_id == cp_item_id
-    ).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="CP 항목을 찾을 수 없습니다")
-
-    log_delete(db, current_user.user_id, "qms_control_plan_item", str(cp_item_id), "CP 항목 삭제")
-    db.delete(item)
-    try:
-        db.commit()
-    except Exception:
-        db.rollback()
-        logger.exception("DB commit failed")
-        raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
-    return {"message": "CP 항목이 삭제되었습니다"}

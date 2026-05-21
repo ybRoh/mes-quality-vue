@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list = ["http://localhost:5173", "http://localhost:3000"]
 
     # 환경
+    ENV: str = "development"
     ENVIRONMENT: str = "development"
 
     # 앱 정보

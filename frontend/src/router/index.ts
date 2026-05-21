@@ -194,6 +194,11 @@ const router = createRouter({
 let sessionVerified = false
 
 router.beforeEach(async (to, _from, next) => {
+  // Reset session verification flag when navigating to login (e.g. after logout)
+  if (to.path === '/login') {
+    sessionVerified = false
+  }
+
   if (to.meta.public) {
     next()
     return

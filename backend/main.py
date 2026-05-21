@@ -19,7 +19,8 @@ from models.base import QmsBase
 async def lifespan(app: FastAPI):
     """앱 시작 시 QMS 테이블 자동 생성"""
     # 신규 qms_* 테이블만 생성 (기존 테이블은 절대 건드리지 않음)
-    QmsBase.metadata.create_all(bind=engine)
+    if settings.ENV != "production":
+        QmsBase.metadata.create_all(bind=engine)
     yield
 
 

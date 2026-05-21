@@ -2,6 +2,10 @@
   <div class="page-container">
     <PageHeader title="대시보드" subtitle="품질관리 현황 요약" />
 
+    <el-alert v-if="isStaleData" type="warning" :closable="false" style="margin-bottom: 8px;">
+      서버 연결 실패 - 데모 데이터를 표시 중입니다
+    </el-alert>
+
     <!-- KPI Cards -->
     <div class="kpi-row">
       <KpiCard
@@ -78,6 +82,8 @@ import { analysisApi } from '@/api/analysis'
 import { claimApi } from '@/api/quality'
 import dayjs from 'dayjs'
 
+const isStaleData = ref(false)
+
 const kpi = ref({
   totalProduction: 0,
   productionTrend: 0,
@@ -124,12 +130,16 @@ function getClaimStatusLabel(status: string): string {
 }
 
 onMounted(async () => {
-  await Promise.allSettled([
+  const results = await Promise.allSettled([
     loadKpi(),
     loadRecentProduction(),
     loadDefectDistribution(),
     loadOpenClaims()
   ])
+  const failures = results.filter(r => r.status === 'rejected')
+  if (failures.length > 0) {
+    isStaleData.value = true
+  }
 })
 
 async function loadKpi() {
@@ -150,6 +160,7 @@ async function loadKpi() {
     }
   } catch (e) {
     console.warn('KPI 데이터 조회 실패:', e)
+    isStaleData.value = true
     // Use demo data
     kpi.value = {
       totalProduction: 12500,
@@ -182,6 +193,7 @@ async function loadRecentProduction() {
     }
   } catch (e) {
     console.warn('최근 생산 추이 조회 실패:', e)
+    isStaleData.value = true
     recentProduction.value = {
       dates: ['05-14', '05-15', '05-16', '05-17', '05-18', '05-19', '05-20'],
       series: [
@@ -210,6 +222,7 @@ async function loadOpenClaims() {
     openClaimsList.value = Array.isArray(raw) ? raw : []
   } catch (e) {
     console.warn('진행중인 클레임 조회 실패:', e)
+    isStaleData.value = true
     openClaimsList.value = [
       { claim_no: 'CLM-2026-001', customer: '현대모비스', product_spec: 'PN-A1020', problem_title: '외관 스크래치 발생', status: 'IN_PROGRESS', current_step: 4, created_at: '2026-05-10' },
       { claim_no: 'CLM-2026-002', customer: '삼성전자', product_spec: 'PN-B2030', problem_title: '치수 공차 초과', status: 'OPEN', current_step: 2, created_at: '2026-05-15' },

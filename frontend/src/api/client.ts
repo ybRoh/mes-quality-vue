@@ -1,6 +1,5 @@
 import axios from 'axios'
 import type { AxiosInstance, AxiosResponse } from 'axios'
-import router from '@/router'
 
 const client: AxiosInstance = axios.create({
   baseURL: '/api',
@@ -16,12 +15,13 @@ client.interceptors.response.use(
   (response: AxiosResponse) => {
     return response
   },
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('userId')
-      localStorage.removeItem('userName')
-      localStorage.removeItem('role')
-      router.push('/login')
+      // Lazy import to avoid circular dependency:
+      // client.ts -> router -> stores/auth -> api/auth -> client.ts
+      const { useAuthStore } = await import('@/stores/auth')
+      const authStore = useAuthStore()
+      authStore.logout()
     } else {
       console.warn(`API 오류 [${error.response?.status}]:`, error.response?.data?.detail || error.message)
     }

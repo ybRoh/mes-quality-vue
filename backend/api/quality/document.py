@@ -150,6 +150,65 @@ def create_document(
     return _build_doc_response(doc, db)
 
 
+# ── 첨부파일 (static-prefix routes before parameterized /{doc_id}) ──
+
+@router.delete("/attachments/{attachment_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
+def delete_attachment(
+    attachment_id: int,
+    db: Session = Depends(get_db),
+    current_user: SysUser = Depends(get_current_user),
+):
+    """첨부파일 삭제"""
+    att = db.query(QmsDocumentAttachment).filter(
+        QmsDocumentAttachment.attachment_id == attachment_id
+    ).first()
+    if not att:
+        raise HTTPException(status_code=404, detail="첨부파일을 찾을 수 없습니다")
+
+    if os.path.exists(att.file_path):
+        os.remove(att.file_path)
+
+    log_delete(db, current_user.user_id, "qms_document_attachment", str(attachment_id), f"첨부파일 삭제: {att.file_name}")
+    db.delete(att)
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        logger.exception("DB commit failed")
+        raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
+    return {"message": "첨부파일이 삭제되었습니다"}
+
+
+@router.get("/attachments/{attachment_id}/download")
+def download_attachment(
+    attachment_id: int,
+    db: Session = Depends(get_db),
+    current_user: SysUser = Depends(get_current_user),
+):
+    """첨부파일 다운로드"""
+    att = db.query(QmsDocumentAttachment).filter(
+        QmsDocumentAttachment.attachment_id == attachment_id
+    ).first()
+    if not att:
+        raise HTTPException(status_code=404, detail="첨부파일을 찾을 수 없습니다")
+
+    if not os.path.exists(att.file_path):
+        raise HTTPException(status_code=404, detail="파일이 서버에 존재하지 않습니다")
+
+    # 경로 탐색 공격 방지
+    resolved = os.path.realpath(att.file_path)
+    if not resolved.startswith(os.path.realpath(UPLOAD_DIR)):
+        raise HTTPException(status_code=400, detail="잘못된 파일 경로")
+
+    return FileResponse(
+        path=att.file_path,
+        filename=att.file_name,
+        media_type=att.mime_type or "application/octet-stream",
+    )
+
+
+# ── 문서 상세/수정/삭제 (parameterized /{doc_id} routes) ──
+
 @router.get("/{doc_id}", response_model=DocumentResponse)
 def get_document(
     doc_id: int,
@@ -361,7 +420,7 @@ def create_revision(
     return DocumentRevisionResponse.model_validate(rev)
 
 
-# ── 첨부파일 ──
+# ── 첨부파일 (parameterized /{doc_id}/attachments routes) ──
 
 @router.get("/{doc_id}/attachments", response_model=List[DocumentAttachmentResponse])
 def list_attachments(
@@ -408,6 +467,11 @@ async def upload_attachment(
     stored_name = f"{uuid.uuid4().hex}{ext}"
     file_path = os.path.join(UPLOAD_DIR, stored_name)
 
+    # 경로 탐색 공격 방지
+    resolved = os.path.realpath(file_path)
+    if not resolved.startswith(os.path.realpath(UPLOAD_DIR)):
+        raise HTTPException(status_code=400, detail="잘못된 파일 경로")
+
     with open(file_path, "wb") as f:
         f.write(content)
 
@@ -431,53 +495,3 @@ async def upload_attachment(
         raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
     db.refresh(att)
     return DocumentAttachmentResponse.model_validate(att)
-
-
-@router.delete("/attachments/{attachment_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
-def delete_attachment(
-    attachment_id: int,
-    db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_user),
-):
-    """첨부파일 삭제"""
-    att = db.query(QmsDocumentAttachment).filter(
-        QmsDocumentAttachment.attachment_id == attachment_id
-    ).first()
-    if not att:
-        raise HTTPException(status_code=404, detail="첨부파일을 찾을 수 없습니다")
-
-    if os.path.exists(att.file_path):
-        os.remove(att.file_path)
-
-    log_delete(db, current_user.user_id, "qms_document_attachment", str(attachment_id), f"첨부파일 삭제: {att.file_name}")
-    db.delete(att)
-    try:
-        db.commit()
-    except Exception:
-        db.rollback()
-        logger.exception("DB commit failed")
-        raise HTTPException(status_code=500, detail="데이터 저장 중 오류가 발생했습니다")
-    return {"message": "첨부파일이 삭제되었습니다"}
-
-
-@router.get("/attachments/{attachment_id}/download")
-def download_attachment(
-    attachment_id: int,
-    db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_user),
-):
-    """첨부파일 다운로드"""
-    att = db.query(QmsDocumentAttachment).filter(
-        QmsDocumentAttachment.attachment_id == attachment_id
-    ).first()
-    if not att:
-        raise HTTPException(status_code=404, detail="첨부파일을 찾을 수 없습니다")
-
-    if not os.path.exists(att.file_path):
-        raise HTTPException(status_code=404, detail="파일이 서버에 존재하지 않습니다")
-
-    return FileResponse(
-        path=att.file_path,
-        filename=att.file_name,
-        media_type=att.mime_type or "application/octet-stream",
-    )

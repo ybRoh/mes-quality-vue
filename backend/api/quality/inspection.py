@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from api.deps import get_db, get_current_user
+from api.quality.utils import escape_like
 from models.existing import (
     SysUser, InspectionSpec, Inspection, InspectionValue,
     Product, Worker,
@@ -115,7 +116,7 @@ def list_inspections(
     if product_id:
         query = query.filter(Inspection.product_id == product_id)
     if lot_no:
-        query = query.filter(Inspection.lot_no.contains(lot_no))
+        query = query.filter(Inspection.lot_no.ilike(f"%{escape_like(lot_no)}%"))
     if insp_stage:
         query = query.filter(Inspection.insp_stage == insp_stage)
     if result:

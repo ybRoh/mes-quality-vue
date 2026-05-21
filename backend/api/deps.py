@@ -3,8 +3,10 @@ FastAPI 의존성 주입
 - DB 세션 제공
 - JWT 기반 현재 사용자 인증 (httpOnly 쿠키 + Authorization 헤더 폴백)
 - 역할 기반 접근 제어 (RBAC)
+- 공용 트랜잭션 래퍼
 """
 
+from contextlib import contextmanager
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Request, status
@@ -94,3 +96,14 @@ def require_role(*allowed_roles: str):
             )
         return current_user
     return _check_role
+
+
+@contextmanager
+def db_transaction(db: Session):
+    """Common transaction wrapper to reduce try/commit/rollback boilerplate."""
+    try:
+        yield db
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
