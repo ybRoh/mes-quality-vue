@@ -1,6 +1,7 @@
 """
 Q&A 질문/답변 API 라우터
-- 질문 등록/수정/삭제, 답변 등록, 질문 마감
+- 목록/상세/질문등록: 로그인 없이 이용 가능 (비로그인 시 이메일 필수)
+- 답변/수정/삭제/마감: 로그인 필요
 """
 
 import logging
@@ -11,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
-from api.deps import get_db, get_current_user, require_role
+from api.deps import get_db, get_current_user, get_optional_user, require_role
 from api.quality.utils import escape_like, validate_qna_content
 from core.audit import log_create, log_update, log_delete
 from models.existing import SysUser
@@ -25,7 +26,7 @@ router = APIRouter(prefix="/api/quality/qna", tags=["Q&A"])
 
 
 # ============================================================
-# Q&A 목록 조회
+# Q&A 목록 조회 (공개)
 # ============================================================
 
 @router.get("/", response_model=PagedResponse[QnaResponse])
@@ -36,7 +37,7 @@ def list_qna(
     status: Optional[str] = None,
     search: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_user),
+    current_user: Optional[SysUser] = Depends(get_optional_user),
 ):
     query = db.query(QmsQna)
     if category:
@@ -62,15 +63,19 @@ def list_qna(
 
 
 # ============================================================
-# Q&A 등록
+# Q&A 등록 (공개 - 비로그인 시 이메일 필수)
 # ============================================================
 
 @router.post("/", response_model=QnaResponse)
 def create_qna(
     data: QnaCreate,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_user),
+    current_user: Optional[SysUser] = Depends(get_optional_user),
 ):
+    # 비로그인 사용자는 이메일 필수
+    if not current_user and not data.author_email:
+        raise HTTPException(status_code=400, detail="로그인하지 않은 경우 이메일 주소가 필요합니다")
+
     # 콘텐츠 필터링
     for field_name, field_value in [("제목", data.title), ("질문", data.question)]:
         violation = validate_qna_content(field_value)
@@ -82,11 +87,14 @@ def create_qna(
         question=data.question,
         category=data.category,
         is_public=data.is_public,
-        author_id=current_user.user_id,
-        author_name=current_user.user_name,
+        author_id=current_user.user_id if current_user else None,
+        author_name=data.author_name or (current_user.user_name if current_user else None),
+        author_email=data.author_email,
     )
     db.add(qna)
-    log_create(db, current_user.user_id, "qms_qna", str(qna.qna_id or "new"), "Q&A 질문 등록")
+
+    user_id = current_user.user_id if current_user else (data.author_email or "anonymous")
+    log_create(db, user_id, "qms_qna", str(qna.qna_id or "new"), "Q&A 질문 등록")
     try:
         db.commit()
     except Exception:
@@ -98,14 +106,14 @@ def create_qna(
 
 
 # ============================================================
-# Q&A 상세 조회
+# Q&A 상세 조회 (공개)
 # ============================================================
 
 @router.get("/{qna_id}", response_model=QnaResponse)
 def get_qna(
     qna_id: int,
     db: Session = Depends(get_db),
-    current_user: SysUser = Depends(get_current_user),
+    current_user: Optional[SysUser] = Depends(get_optional_user),
 ):
     qna = db.query(QmsQna).filter(QmsQna.qna_id == qna_id).first()
     if not qna:
@@ -122,7 +130,7 @@ def get_qna(
 
 
 # ============================================================
-# Q&A 수정 (작성자 또는 ADMIN만)
+# Q&A 수정 (작성자 또는 ADMIN만 - 로그인 필요)
 # ============================================================
 
 @router.put("/{qna_id}", response_model=QnaResponse)
@@ -167,7 +175,7 @@ def update_qna(
 
 
 # ============================================================
-# Q&A 삭제 (작성자 또는 ADMIN만)
+# Q&A 삭제 (ADMIN, MANAGER만 - 로그인 필요)
 # ============================================================
 
 @router.delete("/{qna_id}", dependencies=[Depends(require_role("ADMIN", "MANAGER"))])
@@ -179,10 +187,6 @@ def delete_qna(
     qna = db.query(QmsQna).filter(QmsQna.qna_id == qna_id).first()
     if not qna:
         raise HTTPException(status_code=404, detail="Q&A를 찾을 수 없습니다")
-
-    # 작성자 또는 ADMIN만 삭제 가능
-    if qna.author_id != current_user.user_id and current_user.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="삭제 권한이 없습니다")
 
     log_delete(db, current_user.user_id, "qms_qna", str(qna.qna_id), "Q&A 삭제")
     db.delete(qna)
@@ -196,7 +200,7 @@ def delete_qna(
 
 
 # ============================================================
-# Q&A 답변 등록 (ADMIN, MANAGER, QA_ENGINEER만)
+# Q&A 답변 등록 (ADMIN, MANAGER, QA_ENGINEER만 - 로그인 필요)
 # ============================================================
 
 @router.post("/{qna_id}/answer", response_model=QnaResponse, dependencies=[Depends(require_role("ADMIN", "MANAGER", "QA_ENGINEER"))])
@@ -234,7 +238,7 @@ def answer_qna(
 
 
 # ============================================================
-# Q&A 마감 (작성자 또는 ADMIN만)
+# Q&A 마감 (작성자 또는 ADMIN만 - 로그인 필요)
 # ============================================================
 
 @router.put("/{qna_id}/close", response_model=QnaResponse)

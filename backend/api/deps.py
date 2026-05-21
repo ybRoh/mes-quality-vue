@@ -98,6 +98,29 @@ def require_role(*allowed_roles: str):
     return _check_role
 
 
+def get_optional_user(
+    request: Request,
+    token: Optional[str] = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> Optional[SysUser]:
+    """JWT 인증이 있으면 사용자 반환, 없으면 None (공개 엔드포인트용)"""
+    if not token:
+        token = request.cookies.get("access_token")
+    if not token:
+        return None
+    try:
+        payload = decode_access_token(token)
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            return None
+    except JWTError:
+        return None
+    return db.query(SysUser).filter(
+        SysUser.user_id == user_id,
+        SysUser.is_active == 1,
+    ).first()
+
+
 @contextmanager
 def db_transaction(db: Session):
     """Common transaction wrapper to reduce try/commit/rollback boilerplate."""

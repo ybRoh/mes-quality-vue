@@ -6,6 +6,9 @@
           <el-icon><Plus /></el-icon>
           새 질문
         </el-button>
+        <el-button v-if="!authStore.isLoggedIn" @click="goLogin">
+          로그인
+        </el-button>
       </template>
     </PageHeader>
 
@@ -76,7 +79,9 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="author_name" label="작성자" width="100" align="center" />
+        <el-table-column prop="author_name" label="작성자" width="130" align="center">
+          <template #default="{ row }">{{ row.author_name || row.author_email || '익명' }}</template>
+        </el-table-column>
         <el-table-column prop="status" label="상태" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="getStatusTagType(row.status)" size="small">
@@ -121,7 +126,7 @@
             <el-tag :type="getStatusTagType(selectedQna.status)" size="small">
               {{ getStatusLabel(selectedQna.status) }}
             </el-tag>
-            <span class="meta-text">{{ selectedQna.author_name }}</span>
+            <span class="meta-text">{{ selectedQna.author_name || selectedQna.author_email || '익명' }}</span>
             <span class="meta-text">{{ formatDate(selectedQna.created_at) }}</span>
             <span class="meta-text">조회 {{ selectedQna.view_count }}</span>
           </div>
@@ -200,6 +205,20 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <template v-if="!authStore.isLoggedIn">
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="이메일" required>
+                <el-input v-model="formData.author_email" placeholder="example@company.com" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="이름">
+                <el-input v-model="formData.author_name_input" placeholder="이름 (선택)" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </template>
         <el-form-item label="질문내용" required>
           <el-input
             v-model="formData.question"
@@ -219,12 +238,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { Plus, Search, ArrowLeft } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import PageHeader from '@/components/common/PageHeader.vue'
 import { qnaApi } from '@/api/quality'
 import { useAuthStore } from '@/stores/auth'
 
+const router = useRouter()
 const authStore = useAuthStore()
 
 const loading = ref(false)
@@ -251,7 +272,9 @@ const formData = ref({
   title: '',
   category: 'GENERAL',
   question: '',
-  is_public: true
+  is_public: true,
+  author_email: '',
+  author_name_input: '',
 })
 
 // --- Role-based permissions ---
@@ -267,17 +290,17 @@ const canAnswer = computed(() => {
 })
 
 const canEdit = computed(() => {
-  if (!selectedQna.value) return false
+  if (!selectedQna.value || !authStore.isLoggedIn) return false
   return selectedQna.value.author_id === authStore.userId || isPrivilegedRole.value
 })
 
 const canDelete = computed(() => {
-  if (!selectedQna.value) return false
-  return selectedQna.value.author_id === authStore.userId || isPrivilegedRole.value
+  if (!selectedQna.value || !authStore.isLoggedIn) return false
+  return isPrivilegedRole.value
 })
 
 const canClose = computed(() => {
-  if (!selectedQna.value) return false
+  if (!selectedQna.value || !authStore.isLoggedIn) return false
   if (selectedQna.value.status === 'CLOSED') return false
   return selectedQna.value.author_id === authStore.userId || isPrivilegedRole.value
 })
@@ -372,9 +395,15 @@ function openCreateDialog() {
     title: '',
     category: 'GENERAL',
     question: '',
-    is_public: true
+    is_public: true,
+    author_email: '',
+    author_name_input: '',
   }
   showDialog.value = true
+}
+
+function goLogin() {
+  router.push('/login')
 }
 
 function editQna(row: any) {
@@ -384,7 +413,9 @@ function editQna(row: any) {
     title: row.title || '',
     category: row.category || 'GENERAL',
     question: row.question || '',
-    is_public: row.is_public ?? true
+    is_public: row.is_public ?? true,
+    author_email: '',
+    author_name_input: '',
   }
   showDialog.value = true
 }
@@ -452,13 +483,23 @@ async function submitForm() {
     ElMessage.warning('질문 내용을 입력하세요.')
     return
   }
+  if (!authStore.isLoggedIn && !formData.value.author_email) {
+    ElMessage.warning('이메일 주소를 입력하세요.')
+    return
+  }
 
   try {
     const payload: Record<string, unknown> = {
       title: formData.value.title,
       category: formData.value.category,
       question: formData.value.question,
-      is_public: formData.value.is_public
+      is_public: formData.value.is_public,
+    }
+    if (!authStore.isLoggedIn) {
+      payload.author_email = formData.value.author_email
+      if (formData.value.author_name_input) {
+        payload.author_name = formData.value.author_name_input
+      }
     }
 
     if (formData.value.qna_id) {

@@ -848,8 +848,9 @@ class QmsQna(QmsBase):
     question = Column(Text, nullable=False)
     answer = Column(Text, nullable=True)
     category = Column(String(50), default="GENERAL")  # GENERAL/QUALITY/PROCESS/EQUIPMENT/SPEC/OTHER
-    author_id = Column(String(50), nullable=False)
+    author_id = Column(String(50), nullable=True)
     author_name = Column(String(100), nullable=True)
+    author_email = Column(String(200), nullable=True)
     status = Column(String(20), default="OPEN")  # OPEN/ANSWERED/CLOSED
     is_public = Column(Boolean, default=True)
     view_count = Column(Integer, default=0)

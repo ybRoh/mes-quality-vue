@@ -3,7 +3,7 @@ Quality API utility functions
 """
 
 import re
-from typing import List
+from typing import List, Optional
 
 
 def escape_like(s: str) -> str:
@@ -38,7 +38,7 @@ _EMAIL_PATTERN = re.compile(
 )
 
 
-def validate_qna_content(text: str) -> str | None:
+def validate_qna_content(text: str) -> Optional[str]:
     """Q&A 콘텐츠 필터링. 위반 시 사유 문자열 반환, 정상이면 None."""
     if not text or not text.strip():
         return "내용을 입력해주세요"

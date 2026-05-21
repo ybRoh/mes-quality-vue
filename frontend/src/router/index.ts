@@ -182,7 +182,7 @@ const routes: RouteRecordRaw[] = [
         path: 'quality/qna',
         name: 'QnA',
         component: () => import('@/views/quality/QnaView.vue'),
-        meta: { title: 'Q&A' },
+        meta: { title: 'Q&A', public: true },
       }
     ]
   },

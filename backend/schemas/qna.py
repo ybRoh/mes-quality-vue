@@ -2,9 +2,12 @@
 Q&A 질문/답변 Pydantic 스키마
 """
 
-from pydantic import BaseModel, ConfigDict
+import re
+from pydantic import BaseModel, ConfigDict, field_validator
 from typing import Optional
 from datetime import datetime
+
+_EMAIL_RE = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
 
 
 class QnaCreate(BaseModel):
@@ -12,6 +15,15 @@ class QnaCreate(BaseModel):
     question: str
     category: str = "GENERAL"
     is_public: bool = True
+    author_email: Optional[str] = None
+    author_name: Optional[str] = None
+
+    @field_validator("author_email")
+    @classmethod
+    def validate_email(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not _EMAIL_RE.match(v):
+            raise ValueError("올바른 이메일 형식이 아닙니다")
+        return v
 
 
 class QnaUpdate(BaseModel):
@@ -33,8 +45,9 @@ class QnaResponse(BaseModel):
     question: str
     answer: Optional[str] = None
     category: str
-    author_id: str
+    author_id: Optional[str] = None
     author_name: Optional[str] = None
+    author_email: Optional[str] = None
     status: str
     is_public: bool
     view_count: int
