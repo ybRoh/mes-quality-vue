@@ -258,8 +258,8 @@ def delete_plan(plan_id: int, db: Session = Depends(get_db), current_user: SysUs
     # 하위 시정조치 → 발견사항 삭제
     findings = db.query(QmsAuditFinding).filter(QmsAuditFinding.plan_id == plan_id).all()
     for f in findings:
-        db.query(QmsCorrectiveAction).filter(QmsCorrectiveAction.finding_id == f.finding_id).delete()
-    db.query(QmsAuditFinding).filter(QmsAuditFinding.plan_id == plan_id).delete()
+        db.query(QmsCorrectiveAction).filter(QmsCorrectiveAction.finding_id == f.finding_id).delete(synchronize_session=False)
+    db.query(QmsAuditFinding).filter(QmsAuditFinding.plan_id == plan_id).delete(synchronize_session=False)
 
     log_delete(db, current_user.user_id, "qms_audit_plan", plan.plan_no, "심사계획 삭제")
     db.delete(plan)
@@ -439,7 +439,7 @@ def delete_finding(finding_id: int, db: Session = Depends(get_db), current_user:
     finding = db.query(QmsAuditFinding).filter(QmsAuditFinding.finding_id == finding_id).first()
     if not finding:
         raise HTTPException(status_code=404, detail="발견사항을 찾을 수 없습니다")
-    db.query(QmsCorrectiveAction).filter(QmsCorrectiveAction.finding_id == finding_id).delete()
+    db.query(QmsCorrectiveAction).filter(QmsCorrectiveAction.finding_id == finding_id).delete(synchronize_session=False)
     log_delete(db, current_user.user_id, "qms_audit_finding", finding.finding_no, "발견사항 삭제")
     db.delete(finding)
     try:

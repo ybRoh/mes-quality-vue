@@ -217,7 +217,7 @@ def delete_msa_study(
     if not study:
         raise HTTPException(status_code=404, detail="MSA 연구를 찾을 수 없습니다")
 
-    db.query(QmsMsaMeasurement).filter(QmsMsaMeasurement.msa_id == msa_id).delete()
+    db.query(QmsMsaMeasurement).filter(QmsMsaMeasurement.msa_id == msa_id).delete(synchronize_session=False)
     log_delete(db, current_user.user_id, "qms_msa_study", study.msa_no, "MSA 연구 삭제")
     db.delete(study)
     try:

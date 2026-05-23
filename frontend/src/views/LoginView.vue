@@ -109,8 +109,8 @@ async function handleLogin() {
 
   try {
     await authStore.login(form.user_id, form.password)
-  } catch (error: any) {
-    errorMsg.value = error.message || '로그인에 실패했습니다. 다시 시도해 주세요.'
+  } catch (error) {
+    errorMsg.value = error instanceof Error ? error.message : '로그인에 실패했습니다.'
   } finally {
     loading.value = false
   }

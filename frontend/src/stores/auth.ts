@@ -34,8 +34,8 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout() {
     try {
       await authApi.logout()
-    } catch {
-      // 쿠키 만료 등으로 실패해도 클라이언트 정리 진행
+    } catch (e) {
+      console.warn('Logout API failed:', e)
     }
 
     userId.value = ''

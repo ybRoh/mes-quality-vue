@@ -300,7 +300,7 @@ def delete_ppap(
     if not ppap:
         raise HTTPException(status_code=404, detail="PPAP를 찾을 수 없습니다")
 
-    db.query(QmsPpapElement).filter(QmsPpapElement.ppap_id == ppap_id).delete()
+    db.query(QmsPpapElement).filter(QmsPpapElement.ppap_id == ppap_id).delete(synchronize_session=False)
     log_delete(db, current_user.user_id, "qms_ppap", ppap.ppap_no, "PPAP 삭제")
     db.delete(ppap)
     try:

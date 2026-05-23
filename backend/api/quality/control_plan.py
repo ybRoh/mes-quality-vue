@@ -263,7 +263,7 @@ def delete_control_plan(
     if not cp:
         raise HTTPException(status_code=404, detail="Control Plan을 찾을 수 없습니다")
 
-    db.query(QmsControlPlanItem).filter(QmsControlPlanItem.cp_id == cp_id).delete()
+    db.query(QmsControlPlanItem).filter(QmsControlPlanItem.cp_id == cp_id).delete(synchronize_session=False)
     log_delete(db, current_user.user_id, "qms_control_plan", cp.cp_no, "Control Plan 삭제")
     db.delete(cp)
     try:

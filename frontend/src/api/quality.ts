@@ -659,11 +659,11 @@ export const kpiApi = {
 
 // Q&A (질문/답변)
 export const qnaApi = {
-  list: (params?: Record<string, unknown>) => client.get('/api/quality/qna', { params }),
-  create: (data: Record<string, unknown>) => client.post('/api/quality/qna', data),
-  get: (id: number) => client.get(`/api/quality/qna/${id}`),
-  update: (id: number, data: Record<string, unknown>) => client.put(`/api/quality/qna/${id}`, data),
-  delete: (id: number) => client.delete(`/api/quality/qna/${id}`),
-  answer: (id: number, data: Record<string, unknown>) => client.post(`/api/quality/qna/${id}/answer`, data),
-  close: (id: number) => client.put(`/api/quality/qna/${id}/close`),
+  list: (params?: Record<string, unknown>) => client.get('/quality/qna', { params }),
+  create: (data: Record<string, unknown>) => client.post('/quality/qna', data),
+  get: (id: number) => client.get(`/quality/qna/${id}`),
+  update: (id: number, data: Record<string, unknown>) => client.put(`/quality/qna/${id}`, data),
+  delete: (id: number) => client.delete(`/quality/qna/${id}`),
+  answer: (id: number, data: Record<string, unknown>) => client.post(`/quality/qna/${id}/answer`, data),
+  close: (id: number) => client.put(`/quality/qna/${id}/close`),
 }

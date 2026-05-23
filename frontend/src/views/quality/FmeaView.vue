@@ -391,6 +391,8 @@ async function saveFmeaItems(items: any[]) {
     )
   )
 
+  if (!results || results.length === 0) return
+
   const succeeded = results.filter(r => r.status === 'fulfilled').length
   const failed = results.filter(r => r.status === 'rejected').length
 

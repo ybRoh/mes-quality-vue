@@ -23,17 +23,17 @@ router = APIRouter(prefix="/api/analysis/period", tags=["기간별 분석"])
 
 @router.get("/daily")
 def daily_production(
-    date: date = Query(..., description="조회 날짜"),
+    query_date: date = Query(..., alias="date", description="조회 날짜"),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     """일별 생산실적 조회"""
-    items = get_daily_production(db, date)
+    items = get_daily_production(db, query_date)
     total_plan = sum(i["plan_qty"] for i in items)
     total_good = sum(i["good_qty"] for i in items)
     total_ng = sum(i["ng_qty"] for i in items)
     return {
-        "date": date,
+        "date": query_date,
         "items": items,
         "total_plan": total_plan,
         "total_good": total_good,

@@ -273,8 +273,8 @@ def delete_apqp_project(
     # 산출물 -> 단계 -> 프로젝트 순서로 삭제
     phases = db.query(QmsApqpPhase).filter(QmsApqpPhase.apqp_id == apqp_id).all()
     for phase in phases:
-        db.query(QmsApqpDeliverable).filter(QmsApqpDeliverable.phase_id == phase.phase_id).delete()
-    db.query(QmsApqpPhase).filter(QmsApqpPhase.apqp_id == apqp_id).delete()
+        db.query(QmsApqpDeliverable).filter(QmsApqpDeliverable.phase_id == phase.phase_id).delete(synchronize_session=False)
+    db.query(QmsApqpPhase).filter(QmsApqpPhase.apqp_id == apqp_id).delete(synchronize_session=False)
 
     log_delete(db, current_user.user_id, "qms_apqp_project",
                project.project_no or str(apqp_id), "APQP 프로젝트 삭제")

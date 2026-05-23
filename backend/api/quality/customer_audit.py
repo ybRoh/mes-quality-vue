@@ -135,7 +135,7 @@ def delete_finding(cust_finding_id: int, db: Session = Depends(get_db), current_
     finding = db.query(QmsCustomerAuditFinding).filter(QmsCustomerAuditFinding.cust_finding_id == cust_finding_id).first()
     if not finding:
         raise HTTPException(status_code=404, detail="발견사항을 찾을 수 없습니다")
-    db.query(QmsCustomerAuditAction).filter(QmsCustomerAuditAction.cust_finding_id == cust_finding_id).delete()
+    db.query(QmsCustomerAuditAction).filter(QmsCustomerAuditAction.cust_finding_id == cust_finding_id).delete(synchronize_session=False)
     log_delete(db, current_user.user_id, "qms_customer_audit_finding", finding.finding_no, "고객심사 발견사항 삭제")
     db.delete(finding)
     try:
@@ -495,15 +495,15 @@ def delete_audit(cust_audit_id: int, db: Session = Depends(get_db), current_user
     if not audit:
         raise HTTPException(status_code=404, detail="고객심사를 찾을 수 없습니다")
 
-    # 하위 시정조치 → 발견사항 삭제
-    findings = db.query(QmsCustomerAuditFinding).filter(QmsCustomerAuditFinding.cust_audit_id == cust_audit_id).all()
-    for f in findings:
-        db.query(QmsCustomerAuditAction).filter(QmsCustomerAuditAction.cust_finding_id == f.cust_finding_id).delete()
-    db.query(QmsCustomerAuditFinding).filter(QmsCustomerAuditFinding.cust_audit_id == cust_audit_id).delete()
-
-    log_delete(db, current_user.user_id, "qms_customer_audit", audit.audit_no, "고객심사 삭제")
-    db.delete(audit)
     try:
+        # 하위 시정조치 → 발견사항 삭제
+        findings = db.query(QmsCustomerAuditFinding).filter(QmsCustomerAuditFinding.cust_audit_id == cust_audit_id).all()
+        for f in findings:
+            db.query(QmsCustomerAuditAction).filter(QmsCustomerAuditAction.cust_finding_id == f.cust_finding_id).delete(synchronize_session=False)
+        db.query(QmsCustomerAuditFinding).filter(QmsCustomerAuditFinding.cust_audit_id == cust_audit_id).delete(synchronize_session=False)
+
+        log_delete(db, current_user.user_id, "qms_customer_audit", audit.audit_no, "고객심사 삭제")
+        db.delete(audit)
         db.commit()
     except Exception:
         db.rollback()

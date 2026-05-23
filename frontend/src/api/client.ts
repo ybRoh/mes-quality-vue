@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { AxiosInstance, AxiosResponse } from 'axios'
+import type { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 
 const client: AxiosInstance = axios.create({
   baseURL: '/api',
@@ -15,7 +15,7 @@ client.interceptors.response.use(
   (response: AxiosResponse) => {
     return response
   },
-  async (error) => {
+  async (error: AxiosError) => {
     if (error.response?.status === 401) {
       // Lazy import to avoid circular dependency:
       // client.ts -> router -> stores/auth -> api/auth -> client.ts
@@ -23,7 +23,8 @@ client.interceptors.response.use(
       const authStore = useAuthStore()
       authStore.logout()
     } else {
-      console.warn(`API 오류 [${error.response?.status}]:`, error.response?.data?.detail || error.message)
+      const data = error.response?.data as Record<string, unknown> | undefined
+      console.warn(`API 오류 [${error.response?.status}]:`, data?.detail || error.message)
     }
     return Promise.reject(error)
   }

@@ -206,7 +206,7 @@ def delete_fmea(
         raise HTTPException(status_code=404, detail="FMEA를 찾을 수 없습니다")
 
     # 하위 항목 먼저 삭제
-    db.query(QmsFmeaItem).filter(QmsFmeaItem.fmea_id == fmea_id).delete()
+    db.query(QmsFmeaItem).filter(QmsFmeaItem.fmea_id == fmea_id).delete(synchronize_session=False)
     log_delete(db, current_user.user_id, "qms_fmea", fmea.fmea_no, "FMEA 삭제")
     db.delete(fmea)
     try:

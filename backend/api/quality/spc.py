@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from api.deps import get_db, get_current_user
-from models.existing import InspectionSpec, InspectionValue, Inspection, Product
+from models.existing import SysUser, InspectionSpec, InspectionValue, Inspection, Product
 from services.spc_service import calculate_xbar_r_chart, calculate_capability
 
 router = APIRouter(prefix="/api/quality/spc", tags=["SPC"])
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/api/quality/spc", tags=["SPC"])
 @router.get("/products")
 def get_products(
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: SysUser = Depends(get_current_user),
 ):
     """SPC 분석 가능한 제품 목록 (측정값이 있는 규격을 가진 제품)"""
     results = (
@@ -45,7 +45,7 @@ def get_products(
 def get_specs(
     product_id: str,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: SysUser = Depends(get_current_user),
 ):
     """제품의 검사 규격 목록 (수치 측정 가능한 것만)"""
     results = (
@@ -75,7 +75,7 @@ def get_spc_data(
     spec_id: int = Query(..., description="검사 규격 ID"),
     sample_count: int = Query(25, ge=5, le=500, description="샘플 수"),
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: SysUser = Depends(get_current_user),
 ):
     """SPC 관리도 데이터 조회 (control-chart 동일)"""
     spec = db.query(InspectionSpec).filter(InspectionSpec.spec_id == spec_id).first()
@@ -122,7 +122,7 @@ def get_control_chart(
     spec_id: int,
     n: int = Query(25, ge=5, le=500, description="최근 N개 데이터"),
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: SysUser = Depends(get_current_user),
 ):
     """Xbar-R/S 관리도 데이터 조회"""
     # 검사 규격 조회
@@ -179,7 +179,7 @@ def get_capability(
     spec_id: int,
     n: int = Query(25, alias="sample_count", description="최근 N개 데이터"),
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: SysUser = Depends(get_current_user),
 ):
     """Cp/Cpk/Pp/Ppk 공정능력 계산"""
     # 검사 규격 조회

@@ -35,7 +35,13 @@ router = APIRouter(prefix="/api/quality/kpi", tags=["성과지표관리"])
 
 # ── KPI 상태 자동 계산 ──
 
-def _calc_kpi_status(actual, target, direction, yellow_threshold, red_threshold):
+def _calc_kpi_status(
+    actual: float,
+    target: Optional[float],
+    direction: str,
+    yellow_threshold: Optional[float],
+    red_threshold: Optional[float],
+) -> str:
     """KPI 실적값을 기반으로 GREEN/YELLOW/RED 상태 자동 계산"""
     if target is None:
         return "GREEN"
@@ -193,7 +199,7 @@ def delete_definition(kpi_id: int, db: Session = Depends(get_db), current_user: 
         raise HTTPException(status_code=404, detail="KPI 정의를 찾을 수 없습니다")
 
     # 하위 KPI 데이터 삭제
-    db.query(QmsKpiData).filter(QmsKpiData.kpi_id == kpi_id).delete()
+    db.query(QmsKpiData).filter(QmsKpiData.kpi_id == kpi_id).delete(synchronize_session=False)
 
     log_delete(db, current_user.user_id, "qms_kpi_definition", kpi.kpi_no, "KPI 정의 삭제")
     db.delete(kpi)

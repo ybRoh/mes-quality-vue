@@ -212,10 +212,11 @@ async function loadSpcData() {
     stats.value = { mean: 0, std: 0, min: 0, max: 0, count: 0, oocCount: 0 }
   }
 
-  if (capResult.status === 'fulfilled') {
+  if (capResult.status === 'fulfilled' && capResult.value?.data) {
     capability.value = capResult.value.data.capability || capResult.value.data
   } else {
-    console.warn('공정능력 데이터 조회 실패:', capResult.reason)
+    const reason = capResult.status === 'rejected' ? capResult.reason : 'No data returned'
+    console.warn('공정능력 데이터 조회 실패:', reason)
     ElMessage.error('공정능력 지수를 불러오는데 실패했습니다')
     capability.value = { cp: 0, cpk: 0, pp: 0, ppk: 0 }
   }
